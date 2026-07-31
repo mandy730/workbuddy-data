@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#ff8fc7" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="宝妈工作台" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<title>妈妈的小宇宙 · 综合管理工作台</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="bg-deco">
+  <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-logo">🌷</div>
+      <div class="brand-text">
+        <h1>妈妈的小宇宙</h1>
+        <p id="brandSub">安安 · 宁宁 · 外贸 · 小红书</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btnQuickAdd" title="快速新建">＋</button>
+      <button class="icon-btn" id="btnSettings" title="数据与同步">⚙</button>
+    </div>
+  </div>
+  <nav class="tabs" id="tabs"></nav>
+</header>
+
+<main id="view" class="view"></main>
+
+<footer class="footer">
+  <span>🌸 数据保存在本机浏览器，可在「设置」里开启云同步 / 导出备份</span>
+</footer>
+
+<div class="modal-root" id="modalRoot" hidden></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "mama-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "妈妈的小宇宙 · 二胎妈妈综合管理工作台（含实时同步服务端）",
+  "main": "sync-server.js",
+  "scripts": {
+    "start": "node sync-server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

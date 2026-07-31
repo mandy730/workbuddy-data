@@ -1,0 +1,1155 @@
+/* ================= 妈妈的小宇宙 · 综合管理工作台 ================= */
+'use strict';
+
+/* ---------- 工具 ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const parseD = s => { const [a, b, c] = String(s).split('-').map(Number); return new Date(a, b - 1, c); };
+const TODAY = () => ymd(new Date());
+function startOfWeek(d) { const x = new Date(d); const w = (x.getDay() + 6) % 7; x.setDate(x.getDate() - w); x.setHours(0, 0, 0, 0); return x; }
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function daysBetween(a, b) { return Math.round((parseD(b) - parseD(a)) / 86400000); }
+function monthKey(s) { return String(s).slice(0, 7); }
+const money = n => (n < 0 ? '-' : '') + '¥' + Math.abs(Number(n) || 0).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+const WD = ['一', '二', '三', '四', '五', '六', '日'];
+
+/* ---------- 常量 ---------- */
+const MODULES = [
+  { id: 'dash', name: '首页仪表盘', emoji: '🏠' },
+  { id: 'anan', name: '安安教育', emoji: '🌸', kind: 'parenting', desc: '7岁 · 二年级', subs: ['语文', '数学', '英语', '数独', '中国舞', '乒乓球'] },
+  { id: 'ning', name: '宁宁教育', emoji: '🍼', kind: 'parenting', desc: '4岁 · 英语启蒙', subs: ['英语启蒙', '亲子早教'] },
+  { id: 'trade', name: '外贸工作', emoji: '💼', kind: 'business', desc: 'DARKO · 日常 · AI', subs: ['DARKO工作', '日常工作待办', 'AI工具学习'] },
+  { id: 'xhs', name: '小红书', emoji: '📕', kind: 'business', desc: '婚纱摄影引流', subs: ['爆款笔记', '选题策划', '数据统计'] },
+  { id: 'life', name: '个人计划', emoji: '💃', kind: 'life', desc: '爵士舞 · 阅读 · 购物', subs: ['爵士舞', '阅读', '生活购物'] },
+  { id: 'money', name: '财务管理', emoji: '💰', kind: 'life', desc: '家庭 · 外贸 · 理财', subs: ['家庭日常', '外贸收支', '理财台账'] }
+];
+const MOD = id => MODULES.find(m => m.id === id) || MODULES[0];
+const KINDS = {
+  parenting: { name: '育儿周期性任务', emoji: '🧸', color: '#ff8fc7', bg: '#ffe9f4', mods: ['anan', 'ning'] },
+  business: { name: '商业项目推进', emoji: '🚀', color: '#8f5aee', bg: '#f3ebff', mods: ['trade', 'xhs'] },
+  life: { name: '生活记录任务', emoji: '🌿', color: '#2a9c81', bg: '#e4f7f1', mods: ['life', 'money'] }
+};
+const PRI = { high: { t: '高优先', c: 'p-high' }, mid: { t: '中优先', c: 'p-mid' }, low: { t: '低优先', c: 'p-low' } };
+const REP = { once: '单次', daily: '每天', weekly: '每周', monthly: '每月' };
+const STAGES = [
+  { id: 'inquiry', n: '询盘沟通' }, { id: 'quote', n: '报价中' }, { id: 'sample', n: '打样确认' },
+  { id: 'order', n: '订单生产' }, { id: 'ship', n: '出货售后' }
+];
+const XSTATUS = [
+  { id: 'idea', n: '选题池' }, { id: 'writing', n: '文案撰写' }, { id: 'shoot', n: '拍摄制作' },
+  { id: 'scheduled', n: '待发布' }, { id: 'published', n: '已发布' }
+];
+const LEDGER_BOOKS = { home: '家庭日常', trade: '外贸收支', invest: '理财台账' };
+const CATS = {
+  home: ['餐饮买菜', '教育培训', '日用百货', '交通出行', '医疗健康', '人情往来', '娱乐旅行', '房贷房租', '其他'],
+  trade: ['货款收入', '佣金收入', '采购成本', '物流运费', '平台推广', '样品费用', '税费', '其他']
+};
+
+/* ---------- 种子数据 ---------- */
+function seed() {
+  const t = (mod, sub, title, pri, repeat, extra) => Object.assign({
+    id: uid(), mod, sub, title, pri, repeat, due: '', tags: [], note: '', doneKeys: [], created: TODAY()
+  }, extra || {});
+  return {
+    meta: { v: 1, updatedAt: Date.now(), owner: '妈妈' },
+    subjects: [
+      { id: 'a-yw', mod: 'anan', name: '语文', emoji: '📖', goal: 6 },
+      { id: 'a-sx', mod: 'anan', name: '数学', emoji: '🔢', goal: 6 },
+      { id: 'a-yy', mod: 'anan', name: '英语', emoji: '🔤', goal: 5 },
+      { id: 'a-sd', mod: 'anan', name: '数独', emoji: '🧩', goal: 5 },
+      { id: 'a-wd', mod: 'anan', name: '中国舞', emoji: '💃', goal: 3 },
+      { id: 'a-pp', mod: 'anan', name: '乒乓球', emoji: '🏓', goal: 3 },
+      { id: 'n-en', mod: 'ning', name: '英语启蒙动画', emoji: '📺', goal: 7 },
+      { id: 'n-bk', mod: 'ning', name: '亲子英文绘本', emoji: '📚', goal: 5 },
+      { id: 'n-sg', mod: 'ning', name: '儿歌律动', emoji: '🎵', goal: 4 },
+      { id: 'l-jz', mod: 'life', name: '爵士舞练习', emoji: '💃', goal: 3 },
+      { id: 'l-rd', mod: 'life', name: '每日阅读', emoji: '📕', goal: 5 }
+    ],
+    tasks: [
+      t('anan', '语文', '朗读课文 + 背诵古诗 20 分钟', 'high', 'daily'),
+      t('anan', '语文', '生字听写 + 错字订正', 'mid', 'weekly'),
+      t('anan', '语文', '摘抄好词好句 5 条', 'low', 'weekly', { tags: ['积累本'] }),
+      t('anan', '数学', '口算练习 100 题（限时 5 分钟）', 'high', 'daily'),
+      t('anan', '数学', '周末错题本复盘', 'mid', 'weekly', { note: '重点：进位加减、应用题理解' }),
+      t('anan', '英语', '单词打卡 + 跟读 15 分钟', 'high', 'daily'),
+      t('anan', '英语', '英文绘本精读 1 本', 'mid', 'weekly'),
+      t('anan', '数独', '6 宫格 1 题', 'mid', 'daily'),
+      t('anan', '数独', '9 宫格挑战 + 计时', 'low', 'weekly', { tags: ['备赛'] }),
+      t('anan', '中国舞', '基本功：竖叉横叉下腰', 'mid', 'weekly', { note: '每周 3 次，考级组合每次过一遍' }),
+      t('anan', '中国舞', '考级曲目完整复习', 'high', 'weekly', { tags: ['考级'] }),
+      t('anan', '乒乓球', '训练课（周三 / 周六）', 'mid', 'weekly'),
+      t('anan', '乒乓球', '在家颠球 200 个', 'low', 'daily'),
+      t('ning', '英语启蒙', '磨耳朵动画 10 分钟', 'high', 'daily', { note: '超级简单儿歌 / Peppa Pig' }),
+      t('ning', '英语启蒙', '亲子英文绘本共读 1 本', 'high', 'daily', { tags: ['亲子'] }),
+      t('ning', '英语启蒙', '儿歌律动跟跳', 'mid', 'weekly'),
+      t('ning', '亲子早教', '手指游戏 / 精细动作练习', 'mid', 'weekly'),
+      t('ning', '亲子早教', '补充新绘本 & 教具', 'low', 'monthly', { tags: ['采购'] }),
+      t('trade', 'DARKO工作', 'DARKO 新款报价单确认', 'high', 'once', { client: 'DARKO', stage: 'quote', follow: ymd(addDays(new Date(), 1)), tags: ['报价'] }),
+      t('trade', 'DARKO工作', '样品寄出并跟踪物流', 'high', 'once', { client: 'DARKO', stage: 'sample', follow: ymd(addDays(new Date(), 3)) }),
+      t('trade', 'DARKO工作', '大货生产进度周跟进', 'mid', 'weekly', { client: 'DARKO', stage: 'order' }),
+      t('trade', '日常工作待办', '客户邮件回复（24h 内）', 'high', 'daily'),
+      t('trade', '日常工作待办', '本周订单 & 应收对账', 'mid', 'weekly'),
+      t('trade', '日常工作待办', '整理月度出货报表', 'mid', 'monthly'),
+      t('trade', 'AI工具学习', '每周精学 1 个 AI 工具并输出笔记', 'mid', 'weekly', { tags: ['AI', '成长'] }),
+      t('trade', 'AI工具学习', '沉淀外贸提示词库', 'low', 'weekly', { note: '开发信 / 议价 / 产品文案三类' }),
+      t('xhs', '选题策划', '每周产出 3 条选题脚本', 'high', 'weekly', { tags: ['内容'] }),
+      t('xhs', '爆款笔记', '拆解 5 篇同城婚纱爆款', 'mid', 'weekly'),
+      t('xhs', '数据统计', '周数据复盘 + 到店线索统计', 'mid', 'weekly'),
+      t('life', '爵士舞', '舞室课程（周二 / 周五）', 'mid', 'weekly'),
+      t('life', '阅读', '睡前阅读 30 分钟', 'mid', 'daily'),
+      t('life', '生活购物', '每周家庭采购清单整理', 'low', 'weekly'),
+      t('money', '家庭日常', '每日记账（3 分钟）', 'high', 'daily'),
+      t('money', '外贸收支', '核对本月外贸收支流水', 'high', 'monthly'),
+      t('money', '理财台账', '更新理财持仓与收益', 'mid', 'monthly')
+    ],
+    checkins: {},
+    events: [
+      { id: uid(), mod: 'anan', title: '中国舞考级（四级）', date: ymd(addDays(new Date(), 51)), type: '考级', note: '考前一周交照片和报名表' },
+      { id: uid(), mod: 'anan', title: '区少儿乒乓球比赛', date: ymd(addDays(new Date(), 16)), type: '比赛', note: '带球拍、运动服、水壶' },
+      { id: uid(), mod: 'anan', title: '英语风采大赛报名截止', date: ymd(addDays(new Date(), 5)), type: '报名', note: '需要 1 分钟自我介绍视频' },
+      { id: uid(), mod: 'anan', title: '数独等级赛（初级组）', date: ymd(addDays(new Date(), 73)), type: '比赛', note: '' }
+    ],
+    xnotes: [
+      { id: uid(), title: '“预算 3000 也能拍出高级感”对比图爆款', author: '@小城婚纱日记', link: '', likes: 12800, points: '封面用左右对比图；文案强调预算痛点；评论区置顶到店福利', tags: ['对比图', '价格锚点'] },
+      { id: uid(), title: '新娘避坑指南 · 拍摄前必问的 8 个问题', author: '@婚礼筹备笔记', link: '', likes: 8600, points: '干货清单体，收藏率高；结尾引导私信领取清单', tags: ['干货', '引流私信'] },
+      { id: uid(), title: '素人改造 vlog：普通女孩的高定瞬间', author: '@喜嫁研究所', link: '', likes: 20400, points: '真人故事线 + 前后反差；本地关键词带定位', tags: ['vlog', '素人改造'] }
+    ],
+    xtopics: [
+      { id: uid(), title: '本地取景地 TOP5 · 春季婚纱照攻略', status: 'idea', date: '', note: '结合门店样片，带地址定位', tags: ['本地'] },
+      { id: uid(), title: '婚纱照拍摄当天时间表（可保存）', status: 'writing', date: ymd(addDays(new Date(), 2)), note: '做成表格图，收藏向', tags: ['干货'] },
+      { id: uid(), title: '素人改造：95 后准新娘的一天', status: 'shoot', date: ymd(addDays(new Date(), 4)), note: '需约客户拍 vlog，出镜授权', tags: ['vlog'] },
+      { id: uid(), title: '3000/6000/1w 三档套系到底差在哪', status: 'scheduled', date: ymd(addDays(new Date(), 1)), note: '价格锚点，引导咨询', tags: ['转化'] }
+    ],
+    xposts: [
+      { id: uid(), title: '春季取景地攻略', date: ymd(addDays(new Date(), -12)), views: 15200, likes: 860, favs: 430, comments: 62, fans: 45, leads: 6 },
+      { id: uid(), title: '婚纱照避坑 8 问', date: ymd(addDays(new Date(), -8)), views: 23800, likes: 1520, favs: 980, comments: 118, fans: 96, leads: 11 },
+      { id: uid(), title: '素人改造 vlog 01', date: ymd(addDays(new Date(), -3)), views: 9400, likes: 520, favs: 210, comments: 44, fans: 28, leads: 4 }
+    ],
+    books: [
+      { id: uid(), title: '《正面管教》', total: 320, current: 128, note: '育儿沟通' },
+      { id: uid(), title: '《外贸高手客户开发》', total: 260, current: 40, note: '工作提升' }
+    ],
+    shopping: [
+      { id: uid(), name: '安安暑期练习册', cat: '学习', price: 68, done: false },
+      { id: uid(), name: '宁宁英文点读笔电池', cat: '母婴', price: 25, done: false },
+      { id: uid(), name: '爵士舞舞鞋', cat: '个人', price: 199, done: false },
+      { id: uid(), name: '家庭日用补货', cat: '日用', price: 260, done: true }
+    ],
+    ledger: [
+      { id: uid(), book: 'home', type: 'out', amount: 1280, cat: '教育培训', date: ymd(addDays(new Date(), -6)), note: '安安舞蹈课续费' },
+      { id: uid(), book: 'home', type: 'out', amount: 860, cat: '餐饮买菜', date: ymd(addDays(new Date(), -3)), note: '本周采购' },
+      { id: uid(), book: 'home', type: 'in', amount: 15000, cat: '工资收入', date: ymd(addDays(new Date(), -10)), note: '' },
+      { id: uid(), book: 'trade', type: 'in', amount: 42600, cat: '货款收入', date: ymd(addDays(new Date(), -5)), note: 'DARKO 尾款' },
+      { id: uid(), book: 'trade', type: 'out', amount: 9800, cat: '采购成本', date: ymd(addDays(new Date(), -7)), note: '面料采购' },
+      { id: uid(), book: 'trade', type: 'out', amount: 1600, cat: '物流运费', date: ymd(addDays(new Date(), -4)), note: '样品快递' }
+    ],
+    holdings: [
+      { id: uid(), name: '货币基金（活钱管理）', type: '现金管理', cost: 50000, value: 50820, note: '家庭应急金' },
+      { id: uid(), name: '沪深300指数定投', type: '基金定投', cost: 36000, value: 39240, note: '每月 3000' },
+      { id: uid(), name: '教育金存款', type: '存款', cost: 60000, value: 61500, note: '安安 + 宁宁' }
+    ],
+    sync: { url: '', key: '', auto: false, last: 0 }
+  };
+}
+
+/* ---------- 存储 ---------- */
+const KEY = 'mama_hub_v1';
+let DB;
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const d = JSON.parse(raw); return Object.assign(seed(), d); }
+  } catch (e) { console.warn(e); }
+  return seed();
+}
+function save(push = true) {
+  DB.meta.updatedAt = Date.now();
+  try { localStorage.setItem(KEY, JSON.stringify(DB)); } catch (e) { toast('存储空间不足'); }
+  if (push) queueSync();
+}
+DB = load();
+
+/* ---------- 周期任务逻辑 ---------- */
+function periodKey(task, d = new Date()) {
+  switch (task.repeat) {
+    case 'daily': return 'D' + ymd(d);
+    case 'weekly': return 'W' + ymd(startOfWeek(d));
+    case 'monthly': return 'M' + ymd(d).slice(0, 7);
+    default: return 'ONCE';
+  }
+}
+const isDone = t => (t.doneKeys || []).includes(periodKey(t));
+function toggleTask(id) {
+  const t = DB.tasks.find(x => x.id === id); if (!t) return;
+  const k = periodKey(t); t.doneKeys = t.doneKeys || [];
+  const i = t.doneKeys.indexOf(k);
+  if (i >= 0) t.doneKeys.splice(i, 1);
+  else { t.doneKeys.push(k); if (t.doneKeys.length > 120) t.doneKeys = t.doneKeys.slice(-120); confetti(); }
+  save(); render();
+}
+const openTasks = mod => DB.tasks.filter(t => (!mod || t.mod === mod) && !isDone(t));
+const kindOpen = kind => DB.tasks.filter(t => KINDS[kind].mods.includes(t.mod) && !isDone(t));
+
+/* ---------- 打卡 ---------- */
+function ck(sid) { return DB.checkins[sid] || (DB.checkins[sid] = []); }
+function toggleCk(sid, date) {
+  const a = ck(sid); const i = a.indexOf(date);
+  if (i >= 0) a.splice(i, 1); else { a.push(date); confetti(); }
+  save(); render();
+}
+const ckWeekCount = (sid, ws) => { const a = ck(sid); let n = 0; for (let i = 0; i < 7; i++) if (a.includes(ymd(addDays(ws, i)))) n++; return n; };
+function streak(sid) { const a = ck(sid); let n = 0, d = new Date(); if (!a.includes(ymd(d))) d = addDays(d, -1); while (a.includes(ymd(d))) { n++; d = addDays(d, -1); } return n; }
+
+/* ---------- UI 状态 ---------- */
+let TAB = 'dash';
+let weekStart = startOfWeek(new Date());
+let filterTag = '';
+let ledgerBook = 'home';
+
+/* ---------- 渲染入口 ---------- */
+function render() {
+  renderTabs();
+  const v = $('#view');
+  v.innerHTML = ({
+    dash: viewDash, anan: viewAnan, ning: viewNing, trade: viewTrade,
+    xhs: viewXhs, life: viewLife, money: viewMoney
+  }[TAB] || viewDash)();
+  v.scrollTop = 0;
+}
+function renderTabs() {
+  $('#tabs').innerHTML = MODULES.map(m => {
+    const n = m.id === 'dash' ? DB.tasks.filter(t => !isDone(t)).length : openTasks(m.id).length;
+    return `<button class="tab ${TAB === m.id ? 'on' : ''}" data-act="tab" data-id="${m.id}">
+      <span>${m.emoji}</span>${esc(m.name)}${n ? `<span class="cnt">${n}</span>` : ''}</button>`;
+  }).join('');
+}
+
+/* ---------- 通用组件 ---------- */
+function taskItem(t) {
+  const d = isDone(t);
+  const m = MOD(t.mod);
+  const overdue = t.due && !d && t.due < TODAY();
+  const followSoon = t.follow && !d && daysBetween(TODAY(), t.follow) <= 2;
+  return `<div class="task ${d ? 'done' : ''}">
+    <div class="chk ${d ? 'on' : ''}" data-act="tg" data-id="${t.id}">${d ? '✓' : ''}</div>
+    <div class="t-body">
+      <div class="t-title">${esc(t.title)}</div>
+      <div class="t-meta">
+        <span class="pill p-sub">${m.emoji} ${esc(t.sub || m.name)}</span>
+        ${PRI[t.pri] ? `<span class="pill ${PRI[t.pri].c}">${PRI[t.pri].t}</span>` : ''}
+        ${t.repeat && t.repeat !== 'once' ? `<span class="pill p-rep">🔁 ${REP[t.repeat]}</span>` : ''}
+        ${t.due ? `<span class="pill ${overdue ? 'p-warn' : 'p-date'}">📅 ${t.due.slice(5)}${overdue ? ' 已逾期' : ''}</span>` : ''}
+        ${t.client ? `<span class="pill p-tag">👤 ${esc(t.client)}</span>` : ''}
+        ${t.stage ? `<span class="pill p-rep">${esc((STAGES.find(s => s.id === t.stage) || {}).n || t.stage)}</span>` : ''}
+        ${t.follow ? `<span class="pill ${followSoon ? 'p-warn' : 'p-date'}">⏰ 跟进 ${t.follow.slice(5)}</span>` : ''}
+        ${(t.tags || []).map(x => `<span class="pill p-tag"># ${esc(x)}</span>`).join('')}
+      </div>
+      ${t.note ? `<div class="t-note">📝 ${esc(t.note)}</div>` : ''}
+    </div>
+    <div class="t-act">
+      <button class="mini" data-act="edit-task" data-id="${t.id}">✎</button>
+      <button class="mini" data-act="del-task" data-id="${t.id}">✕</button>
+    </div>
+  </div>`;
+}
+function taskGroup(mod, sub) {
+  const list = DB.tasks.filter(t => t.mod === mod && t.sub === sub && (!filterTag || (t.tags || []).includes(filterTag)));
+  list.sort((a, b) => (isDone(a) - isDone(b)) || (['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri)));
+  const undone = list.filter(t => !isDone(t)).length;
+  return `<div class="card">
+    <div class="card-h"><h3>${esc(sub)} <span class="sub">${undone} 项待办 / 共 ${list.length}</span></h3></div>
+    ${list.length ? list.map(taskItem).join('') : emptyBox('还没有安排，点下面加一条吧')}
+    <button class="add-line" data-act="add-task" data-mod="${mod}" data-sub="${esc(sub)}">＋ 添加「${esc(sub)}」待办</button>
+  </div>`;
+}
+const emptyBox = (txt, ic = '🌷') => `<div class="empty"><div>${ic}</div>${esc(txt)}</div>`;
+
+function weekNav() {
+  const we = addDays(weekStart, 6);
+  const isCur = ymd(weekStart) === ymd(startOfWeek(new Date()));
+  return `<div class="week-nav">
+    <button class="mini" data-act="wk" data-d="-1">‹</button>
+    <b>${ymd(weekStart).slice(5)} ~ ${ymd(we).slice(5)}${isCur ? ' · 本周' : ''}</b>
+    <button class="mini" data-act="wk" data-d="1">›</button>
+  </div>`;
+}
+function checkinTable(mod) {
+  const subs = DB.subjects.filter(s => s.mod === mod);
+  const today = TODAY();
+  return `<div class="ck-wrap"><table class="ck-table">
+    <tr><th>科目</th>${WD.map((w, i) => `<th>${w}<br><span style="font-size:9px">${ymd(addDays(weekStart, i)).slice(8)}</span></th>`).join('')}<th>达标</th></tr>
+    ${subs.map(s => {
+    const c = ckWeekCount(s.id, weekStart); const st = streak(s.id);
+    return `<tr>
+      <td class="ck-name">${s.emoji} ${esc(s.name)}<small>连续 ${st} 天 · 目标 ${s.goal} 次/周</small></td>
+      ${WD.map((_, i) => {
+      const d = ymd(addDays(weekStart, i));
+      const on = ck(s.id).includes(d);
+      return `<td class="ck-cell"><div class="dot ${on ? 'on' : ''} ${d === today ? 'today' : ''}" data-act="ck" data-sid="${s.id}" data-d="${d}">✓</div></td>`;
+    }).join('')}
+      <td class="ck-cell ck-goal" style="width:auto">${c}/${s.goal} ${c >= s.goal ? '🎉' : ''}</td>
+    </tr>`;
+  }).join('')}
+  </table></div>`;
+}
+function eventList(mod) {
+  const evs = DB.events.filter(e => !mod || e.mod === mod).slice().sort((a, b) => a.date.localeCompare(b.date));
+  if (!evs.length) return emptyBox('还没有赛事 / 考级提醒', '🏆');
+  return evs.map(e => {
+    const dd = daysBetween(TODAY(), e.date);
+    const txt = dd < 0 ? `已过 ${-dd} 天` : dd === 0 ? '就是今天！' : `还有 ${dd} 天`;
+    return `<div class="ev">
+      <div class="ev-d"><b>${e.date.slice(8)}</b><span>${e.date.slice(5, 7)}月</span></div>
+      <div class="ev-b"><b>${esc(e.title)}</b>
+        <div class="t-meta"><span class="pill p-tag">${esc(e.type || '活动')}</span>
+        ${e.note ? `<span class="pill p-sub">${esc(e.note)}</span>` : ''}</div>
+      </div>
+      <span class="ev-cd ${dd >= 0 && dd <= 7 ? 'soon' : ''}">${txt}</span>
+      <div class="t-act"><button class="mini" data-act="edit-ev" data-id="${e.id}">✎</button>
+      <button class="mini" data-act="del-ev" data-id="${e.id}">✕</button></div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- 视图：仪表盘 ---------- */
+function viewDash() {
+  const all = DB.tasks;
+  const todayTasks = all.filter(t => t.repeat === 'daily' || (t.due && t.due === TODAY()));
+  const doneToday = todayTasks.filter(isDone).length;
+  const p = todayTasks.length ? doneToday / todayTasks.length : 0;
+  const C = 2 * Math.PI * 34;
+  const h = new Date().getHours();
+  const hello = h < 6 ? '夜深了，早点休息呀' : h < 11 ? '早上好，新的一天开始啦' : h < 14 ? '中午好，记得吃饭休息' : h < 18 ? '下午好，继续加油' : '晚上好，今天辛苦啦';
+
+  const kindCards = Object.entries(KINDS).map(([k, v]) => {
+    const list = kindOpen(k).sort((a, b) => ['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri));
+    return `<div class="kind-card">
+      <div class="kind-head">
+        <div class="kind-ic" style="background:${v.bg}">${v.emoji}</div>
+        <div><b>${v.name}</b><span>${v.mods.map(m => MOD(m).name).join(' · ')}</span></div>
+        <div class="kind-num" style="color:${v.color}">${list.length}<small>未完成</small></div>
+      </div>
+      ${list.slice(0, 4).map(taskItem).join('') || emptyBox('全部完成，太棒啦！', '🎉')}
+      ${list.length > 4 ? `<div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:4px">还有 ${list.length - 4} 项…</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const soonEv = DB.events.filter(e => { const d = daysBetween(TODAY(), e.date); return d >= 0 && d <= 60; })
+    .sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+  const follows = DB.tasks.filter(t => t.follow && !isDone(t) && daysBetween(TODAY(), t.follow) <= 7)
+    .sort((a, b) => a.follow.localeCompare(b.follow));
+  const mk = TODAY().slice(0, 7);
+  const mIn = DB.ledger.filter(l => monthKey(l.date) === mk && l.type === 'in').reduce((s, l) => s + Number(l.amount), 0);
+  const mOut = DB.ledger.filter(l => monthKey(l.date) === mk && l.type === 'out').reduce((s, l) => s + Number(l.amount), 0);
+  const todos = DB.tasks.filter(t => !isDone(t)).length;
+
+  return `
+  <div class="hero">
+    <div class="hero-row">
+      <div><h2>${hello} ✨</h2>
+        <p>${new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })} · 全部待办 ${todos} 项</p>
+      </div>
+      <div class="ring">
+        <svg width="82" height="82"><circle cx="41" cy="41" r="34" stroke="rgba(255,255,255,.3)" stroke-width="8" fill="none"/>
+        <circle cx="41" cy="41" r="34" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round"
+          stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C - C * p).toFixed(1)}"/></svg>
+        <div style="text-align:center"><b>${Math.round(p * 100)}%</b><i>今日完成</i></div>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><b>${doneToday}/${todayTasks.length}</b><span>今日打卡任务</span></div>
+      <div class="hstat"><b>${kindOpen('parenting').length}</b><span>育儿待办</span></div>
+      <div class="hstat"><b>${kindOpen('business').length}</b><span>商业待办</span></div>
+      <div class="hstat"><b>${soonEv.length}</b><span>近期赛事</span></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">🗂 各模块未完成汇总 <small>按任务性质分类</small></h2>
+  <div class="grid g3">${kindCards}</div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <div class="card-h"><h3>🏆 赛事 / 考级提醒</h3><button class="btn btn-g btn-sm" data-act="add-ev">＋ 添加</button></div>
+      ${soonEv.length ? soonEv.map(e => {
+    const dd = daysBetween(TODAY(), e.date);
+    return `<div class="ev"><div class="ev-d"><b>${e.date.slice(8)}</b><span>${e.date.slice(5, 7)}月</span></div>
+      <div class="ev-b"><b>${esc(e.title)}</b><div class="t-meta"><span class="pill p-tag">${esc(e.type)}</span>
+      <span class="pill p-sub">${MOD(e.mod).name}</span></div></div>
+      <span class="ev-cd ${dd <= 7 ? 'soon' : ''}">${dd === 0 ? '今天' : '还有 ' + dd + ' 天'}</span></div>`;
+  }).join('') : emptyBox('近 60 天没有赛事安排', '🏆')}
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>📞 客户跟进提醒</h3><span class="sub">7 天内</span></div>
+      ${follows.length ? follows.map(taskItem).join('') : emptyBox('暂无临期客户跟进', '📞')}
+    </div>
+  </div>
+
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card">
+      <div class="card-h"><h3>📅 今日打卡速览</h3></div>
+      ${DB.subjects.filter(s => s.mod === 'anan' || s.mod === 'ning').map(s => {
+    const on = ck(s.id).includes(TODAY());
+    return `<div class="task"><div class="chk ${on ? 'on' : ''}" data-act="ck" data-sid="${s.id}" data-d="${TODAY()}">${on ? '✓' : ''}</div>
+      <div class="t-body"><div class="t-title">${s.emoji} ${esc(s.name)}</div>
+      <div class="t-meta"><span class="pill p-sub">${MOD(s.mod).name}</span>
+      <span class="pill p-rep">本周 ${ckWeekCount(s.id, startOfWeek(new Date()))}/${s.goal}</span></div></div></div>`;
+  }).join('')}
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>💰 本月财务</h3><span class="sub">${mk}</span></div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+        <div class="stat"><b class="pos">${money(mIn)}</b><span>收入</span></div>
+        <div class="stat"><b class="neg">${money(mOut)}</b><span>支出</span></div>
+      </div>
+      <div class="stat" style="margin-top:8px"><b>${money(mIn - mOut)}</b><span>本月结余</span></div>
+      <button class="add-line" style="margin-top:10px" data-act="add-ledger">＋ 快速记一笔</button>
+    </div>
+    <div class="card">
+      <div class="card-h"><h3>📕 小红书进度</h3></div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+        <div class="stat"><b>${DB.xtopics.filter(t => t.status !== 'published').length}</b><span>在推进选题</span></div>
+        <div class="stat"><b>${DB.xposts.length}</b><span>已发布笔记</span></div>
+        <div class="stat"><b>${DB.xposts.reduce((s, p) => s + Number(p.leads || 0), 0)}</b><span>到店咨询</span></div>
+        <div class="stat"><b>${DB.xnotes.length}</b><span>爆款素材</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- 视图：安安 ---------- */
+function viewAnan() {
+  return `
+  <div class="card">
+    <div class="card-h"><h3>🌸 安安 · 周度学习打卡 <span class="sub">7岁 / 二年级</span></h3>${weekNav()}</div>
+    ${checkinTable('anan')}
+    <button class="add-line" style="margin-top:10px" data-act="add-subject" data-mod="anan">＋ 新增打卡科目</button>
+  </div>
+
+  <h2 class="section-title">🏆 赛事 / 考级提醒 <small>自动倒计时</small></h2>
+  <div class="card">
+    ${eventList('anan')}
+    <button class="add-line" style="margin-top:8px" data-act="add-ev" data-mod="anan">＋ 添加赛事 / 考级</button>
+  </div>
+
+  <h2 class="section-title">📚 学科与兴趣子任务 <small>可设优先级、重复周期、标签备注</small></h2>
+  ${tagChips('anan')}
+  <div class="grid g2">${MOD('anan').subs.map(s => taskGroup('anan', s)).join('')}</div>`;
+}
+
+/* ---------- 视图：宁宁 ---------- */
+function viewNing() {
+  const s1 = DB.subjects.filter(s => s.mod === 'ning');
+  const total = s1.reduce((a, s) => a + ckWeekCount(s.id, weekStart), 0);
+  const goal = s1.reduce((a, s) => a + s.goal, 0);
+  return `
+  <div class="card">
+    <div class="card-h"><h3>🍼 宁宁 · 英语启蒙亲子打卡 <span class="sub">4岁 · 每天一点点</span></h3>${weekNav()}</div>
+    ${checkinTable('ning')}
+    <div style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
+        <span>本周启蒙完成度</span><b style="color:var(--pink-600)">${total}/${goal} 次</b></div>
+      <div class="pbar"><i style="width:${goal ? Math.min(100, total / goal * 100) : 0}%"></i></div>
+    </div>
+    <button class="add-line" style="margin-top:12px" data-act="add-subject" data-mod="ning">＋ 新增启蒙打卡项</button>
+  </div>
+
+  <h2 class="section-title">🧸 亲子早教待办</h2>
+  ${tagChips('ning')}
+  <div class="grid g2">${MOD('ning').subs.map(s => taskGroup('ning', s)).join('')}</div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>💡 启蒙小贴士</h3></div>
+    <div class="t-note" style="font-size:12.5px;line-height:1.9">
+      · 4 岁重「输入量」不重「输出量」，每天 10-15 分钟高频比周末突击更有效<br>
+      · 动画磨耳朵 + 亲子共读 + 儿歌律动，三件套轮着来，不逼输出不纠发音<br>
+      · 打卡连续 7 天可以和宁宁一起挑个小奖励，仪式感能撑很久 🎁
+    </div>
+  </div>`;
+}
+
+/* ---------- 视图：外贸 ---------- */
+function viewTrade() {
+  const cl = DB.tasks.filter(t => t.mod === 'trade' && t.client);
+  const board = STAGES.map(s => {
+    const items = cl.filter(t => t.stage === s.id);
+    return `<div class="kb-col"><h4>${s.n}<span>${items.length}</span></h4>
+      ${items.map(t => `<div class="kb-card" data-act="edit-task" data-id="${t.id}">
+        <b>${esc(t.title)}</b>
+        <div class="t-meta"><span class="pill p-tag">👤 ${esc(t.client)}</span>
+        ${PRI[t.pri] ? `<span class="pill ${PRI[t.pri].c}">${PRI[t.pri].t}</span>` : ''}
+        ${t.follow ? `<span class="pill ${daysBetween(TODAY(), t.follow) <= 2 ? 'p-warn' : 'p-date'}">⏰ ${t.follow.slice(5)}</span>` : ''}</div>
+      </div>`).join('') || `<div style="font-size:11px;color:var(--muted);text-align:center;padding:8px">暂无</div>`}
+    </div>`;
+  }).join('');
+  const hi = openTasks('trade').filter(t => t.pri === 'high').length;
+
+  return `
+  <div class="grid g4">
+    <div class="card"><div class="stat"><b>${openTasks('trade').length}</b><span>未完成待办</span></div></div>
+    <div class="card"><div class="stat"><b style="color:#d63d3d">${hi}</b><span>高优先事项</span></div></div>
+    <div class="card"><div class="stat"><b>${cl.filter(t => !isDone(t)).length}</b><span>在跟进客户任务</span></div></div>
+    <div class="card"><div class="stat"><b>${DB.tasks.filter(t => t.sub === 'AI工具学习').length}</b><span>AI 学习计划</span></div></div>
+  </div>
+
+  <h2 class="section-title">📊 客户跟进节点看板 <small>点击卡片可编辑阶段</small></h2>
+  <div class="card"><div class="kb">${board}</div>
+    <button class="add-line" style="margin-top:10px" data-act="add-task" data-mod="trade" data-sub="DARKO工作">＋ 新增客户跟进任务</button>
+  </div>
+
+  <h2 class="section-title">🗒 三大工作分区</h2>
+  ${tagChips('trade')}
+  <div class="grid g3">${MOD('trade').subs.map(s => taskGroup('trade', s)).join('')}</div>`;
+}
+
+/* ---------- 视图：小红书 ---------- */
+function viewXhs() {
+  const tot = k => DB.xposts.reduce((s, p) => s + Number(p[k] || 0), 0);
+  const board = XSTATUS.map(s => {
+    const items = DB.xtopics.filter(t => t.status === s.id);
+    return `<div class="kb-col"><h4>${s.n}<span>${items.length}</span></h4>
+      ${items.map(t => `<div class="kb-card" data-act="edit-topic" data-id="${t.id}">
+        <b>${esc(t.title)}</b>
+        <div class="t-meta">${t.date ? `<span class="pill p-date">📅 ${t.date.slice(5)}</span>` : ''}
+        ${(t.tags || []).map(x => `<span class="pill p-tag"># ${esc(x)}</span>`).join('')}</div>
+        ${t.note ? `<div class="t-note">${esc(t.note)}</div>` : ''}
+      </div>`).join('') || `<div style="font-size:11px;color:var(--muted);text-align:center;padding:8px">暂无</div>`}
+    </div>`;
+  }).join('');
+
+  const maxV = Math.max(1, ...DB.xposts.map(p => Number(p.views || 0)));
+  const bars = DB.xposts.slice(-8).map(p => `<div class="bar-i">
+    <b>${(Number(p.views) / 1000).toFixed(1)}k</b>
+    <div class="bar" style="height:${Math.max(6, Number(p.views) / maxV * 88)}px"></div>
+    <span>${esc(p.title.slice(0, 5))}</span></div>`).join('');
+
+  return `
+  <div class="grid g4">
+    <div class="card"><div class="stat"><b>${(tot('views') / 10000).toFixed(1)}w</b><span>累计曝光</span></div></div>
+    <div class="card"><div class="stat"><b>${tot('likes')}</b><span>累计点赞</span></div></div>
+    <div class="card"><div class="stat"><b>${tot('fans')}</b><span>累计涨粉</span></div></div>
+    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${tot('leads')}</b><span>到店咨询线索</span></div></div>
+  </div>
+
+  <h2 class="section-title">🔥 爆款笔记收集 <small>拆解可复用套路</small></h2>
+  <div class="grid g3">
+    ${DB.xnotes.map(n => `<div class="note-card">
+      <h4>${esc(n.title)}</h4>
+      <div class="t-meta"><span class="pill p-tag">${esc(n.author || '未知博主')}</span>
+      <span class="pill p-rep">❤️ ${Number(n.likes || 0).toLocaleString()}</span>
+      ${(n.tags || []).map(x => `<span class="pill p-sub"># ${esc(x)}</span>`).join('')}</div>
+      ${n.points ? `<p>💡 ${esc(n.points)}</p>` : ''}
+      ${n.link ? `<p><a class="mini-link" href="${esc(n.link)}" target="_blank" rel="noopener">${esc(n.link)}</a></p>` : ''}
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <button class="btn btn-g btn-sm" data-act="edit-note" data-id="${n.id}">编辑</button>
+        <button class="btn btn-g btn-sm" data-act="del-note" data-id="${n.id}">删除</button>
+      </div>
+    </div>`).join('') || emptyBox('先去收集几篇同城爆款吧', '🔥')}
+  </div>
+  <button class="add-line" style="margin-top:12px" data-act="add-note">＋ 收集一篇爆款笔记</button>
+
+  <h2 class="section-title">📝 选题策划看板</h2>
+  <div class="card"><div class="kb">${board}</div>
+    <button class="add-line" style="margin-top:10px" data-act="add-topic">＋ 新增选题</button>
+  </div>
+
+  <h2 class="section-title">📈 发布后数据统计</h2>
+  <div class="card">
+    <div class="card-h"><h3>曝光趋势</h3><span class="sub">最近 ${Math.min(8, DB.xposts.length)} 篇</span></div>
+    <div class="bars">${bars || ''}</div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="tbl-wrap"><table class="data">
+      <tr><th>笔记</th><th>发布日</th><th>曝光</th><th>点赞</th><th>收藏</th><th>评论</th><th>涨粉</th><th>咨询</th><th>互动率</th><th></th></tr>
+      ${DB.xposts.slice().sort((a, b) => b.date.localeCompare(a.date)).map(p => {
+    const rate = p.views ? ((Number(p.likes) + Number(p.favs) + Number(p.comments)) / p.views * 100).toFixed(1) : '0';
+    return `<tr><td><b>${esc(p.title)}</b></td><td>${p.date.slice(5)}</td>
+      <td class="num">${Number(p.views).toLocaleString()}</td><td class="num">${p.likes}</td>
+      <td class="num">${p.favs}</td><td class="num">${p.comments}</td>
+      <td class="num pos">+${p.fans}</td><td class="num" style="color:var(--pink-600)">${p.leads}</td>
+      <td class="num">${rate}%</td>
+      <td><button class="mini" data-act="edit-post" data-id="${p.id}">✎</button>
+      <button class="mini" data-act="del-post" data-id="${p.id}">✕</button></td></tr>`;
+  }).join('')}
+    </table></div>
+    <button class="add-line" style="margin-top:10px" data-act="add-post">＋ 记录一篇发布数据</button>
+  </div>
+
+  <h2 class="section-title">✅ 自媒体待办</h2>
+  <div class="grid g3">${MOD('xhs').subs.map(s => taskGroup('xhs', s)).join('')}</div>`;
+}
+
+/* ---------- 视图：个人计划 ---------- */
+function viewLife() {
+  const subs = DB.subjects.filter(s => s.mod === 'life');
+  const shopUndone = DB.shopping.filter(s => !s.done);
+  const budget = shopUndone.reduce((a, s) => a + Number(s.price || 0), 0);
+  return `
+  <div class="card">
+    <div class="card-h"><h3>💃 我的坚持打卡 <span class="sub">爵士舞 · 阅读</span></h3>${weekNav()}</div>
+    <div class="ck-wrap"><table class="ck-table">
+      <tr><th>项目</th>${WD.map((w, i) => `<th>${w}</th>`).join('')}<th>达标</th></tr>
+      ${subs.map(s => `<tr>
+        <td class="ck-name">${s.emoji} ${esc(s.name)}<small>连续 ${streak(s.id)} 天</small></td>
+        ${WD.map((_, i) => { const d = ymd(addDays(weekStart, i)); const on = ck(s.id).includes(d);
+          return `<td class="ck-cell"><div class="dot ${on ? 'on' : ''} ${d === TODAY() ? 'today' : ''}" data-act="ck" data-sid="${s.id}" data-d="${d}">✓</div></td>`; }).join('')}
+        <td class="ck-cell ck-goal" style="width:auto">${ckWeekCount(s.id, weekStart)}/${s.goal}</td></tr>`).join('')}
+    </table></div>
+    <button class="add-line" style="margin-top:10px" data-act="add-subject" data-mod="life">＋ 新增打卡项</button>
+  </div>
+
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card">
+      <div class="card-h"><h3>📚 阅读书单</h3><button class="btn btn-g btn-sm" data-act="add-book">＋ 加书</button></div>
+      ${DB.books.map(b => {
+    const p = b.total ? Math.min(100, b.current / b.total * 100) : 0;
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600">
+        <span>${esc(b.title)}</span><span style="color:var(--muted);font-size:11px">${b.current}/${b.total} 页</span></div>
+      <div class="pbar" style="margin:6px 0"><i style="width:${p}%"></i></div>
+      <div class="t-meta"><span class="pill p-sub">${esc(b.note || '')}</span>
+      <button class="mini" data-act="edit-book" data-id="${b.id}">✎</button>
+      <button class="mini" data-act="del-book" data-id="${b.id}">✕</button></div></div>`;
+  }).join('') || emptyBox('加一本正在读的书吧', '📚')}
+    </div>
+
+    <div class="card">
+      <div class="card-h"><h3>🛒 生活购物清单</h3><span class="sub">待买 ${shopUndone.length} 件 · 预算 ${money(budget)}</span></div>
+      ${DB.shopping.map(s => `<div class="task ${s.done ? 'done' : ''}">
+        <div class="chk ${s.done ? 'on' : ''}" data-act="tg-shop" data-id="${s.id}">${s.done ? '✓' : ''}</div>
+        <div class="t-body"><div class="t-title">${esc(s.name)}</div>
+        <div class="t-meta"><span class="pill p-tag">${esc(s.cat || '其他')}</span>
+        <span class="pill p-sub">${money(s.price)}</span></div></div>
+        <div class="t-act"><button class="mini" data-act="del-shop" data-id="${s.id}">✕</button></div></div>`).join('') || emptyBox('清单是空的', '🛒')}
+      <button class="add-line" data-act="add-shop">＋ 添加购物项</button>
+    </div>
+  </div>
+
+  <h2 class="section-title">🌿 个人待办</h2>
+  ${tagChips('life')}
+  <div class="grid g3">${MOD('life').subs.map(s => taskGroup('life', s)).join('')}</div>`;
+}
+
+/* ---------- 视图：财务 ---------- */
+function viewMoney() {
+  const mk = TODAY().slice(0, 7);
+  const list = DB.ledger.filter(l => l.book === ledgerBook).sort((a, b) => b.date.localeCompare(a.date));
+  const mIn = list.filter(l => monthKey(l.date) === mk && l.type === 'in').reduce((s, l) => s + Number(l.amount), 0);
+  const mOut = list.filter(l => monthKey(l.date) === mk && l.type === 'out').reduce((s, l) => s + Number(l.amount), 0);
+
+  const months = [...new Set(DB.ledger.filter(l => l.book === ledgerBook).map(l => monthKey(l.date)))].sort().slice(-6);
+  const mData = months.map(m => ({
+    m, in: DB.ledger.filter(l => l.book === ledgerBook && monthKey(l.date) === m && l.type === 'in').reduce((s, l) => s + Number(l.amount), 0),
+    out: DB.ledger.filter(l => l.book === ledgerBook && monthKey(l.date) === m && l.type === 'out').reduce((s, l) => s + Number(l.amount), 0)
+  }));
+  const maxM = Math.max(1, ...mData.map(d => Math.max(d.in, d.out)));
+
+  const hCost = DB.holdings.reduce((s, h) => s + Number(h.cost), 0);
+  const hVal = DB.holdings.reduce((s, h) => s + Number(h.value), 0);
+
+  return `
+  <div class="chips">
+    ${Object.entries(LEDGER_BOOKS).map(([k, v]) => `<button class="chip ${ledgerBook === k ? 'on' : ''}" data-act="book" data-id="${k}">${v}</button>`).join('')}
+  </div>
+
+  ${ledgerBook === 'invest' ? `
+  <div class="grid g3">
+    <div class="card"><div class="stat"><b>${money(hCost)}</b><span>投入本金</span></div></div>
+    <div class="card"><div class="stat"><b>${money(hVal)}</b><span>当前市值</span></div></div>
+    <div class="card"><div class="stat"><b class="${hVal - hCost >= 0 ? 'pos' : 'neg'}">${money(hVal - hCost)} (${hCost ? ((hVal - hCost) / hCost * 100).toFixed(2) : 0}%)</b><span>累计收益</span></div></div>
+  </div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>📒 理财台账</h3></div>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th>项目</th><th>类型</th><th>本金</th><th>现值</th><th>收益</th><th>收益率</th><th>备注</th><th></th></tr>
+      ${DB.holdings.map(h => { const pf = Number(h.value) - Number(h.cost);
+        return `<tr><td><b>${esc(h.name)}</b></td><td>${esc(h.type)}</td>
+        <td class="num">${money(h.cost)}</td><td class="num">${money(h.value)}</td>
+        <td class="num ${pf >= 0 ? 'pos' : 'neg'}">${money(pf)}</td>
+        <td class="num ${pf >= 0 ? 'pos' : 'neg'}">${h.cost ? (pf / h.cost * 100).toFixed(2) : 0}%</td>
+        <td>${esc(h.note || '')}</td>
+        <td><button class="mini" data-act="edit-hold" data-id="${h.id}">✎</button>
+        <button class="mini" data-act="del-hold" data-id="${h.id}">✕</button></td></tr>`; }).join('')}
+    </table></div>
+    <button class="add-line" style="margin-top:10px" data-act="add-hold">＋ 新增理财项目</button>
+  </div>` : `
+  <div class="grid g3">
+    <div class="card"><div class="stat"><b class="pos">${money(mIn)}</b><span>本月收入</span></div></div>
+    <div class="card"><div class="stat"><b class="neg">${money(mOut)}</b><span>本月支出</span></div></div>
+    <div class="card"><div class="stat"><b>${money(mIn - mOut)}</b><span>本月结余</span></div></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>📊 近 ${mData.length} 个月收支</h3><span class="sub">${LEDGER_BOOKS[ledgerBook]}</span></div>
+    <div class="bars">
+      ${mData.map(d => `<div class="bar-i"><b>${(d.in / 1000).toFixed(1)}k</b>
+        <div style="display:flex;gap:3px;align-items:flex-end;width:100%;justify-content:center">
+          <div class="bar" style="height:${d.in / maxM * 80}px;background:linear-gradient(180deg,#ff9fd0,#f76bb0)"></div>
+          <div class="bar" style="height:${d.out / maxM * 80}px;background:linear-gradient(180deg,#cdb2ff,#8f5aee)"></div>
+        </div><span>${d.m.slice(5)}月</span></div>`).join('') || ''}
+    </div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">粉色＝收入　紫色＝支出</div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>🧾 ${LEDGER_BOOKS[ledgerBook]}流水</h3>
+      <button class="btn btn-p btn-sm" data-act="add-ledger" data-book="${ledgerBook}">＋ 记一笔</button></div>
+    <div class="tbl-wrap"><table class="data">
+      <tr><th>日期</th><th>类型</th><th>分类</th><th>金额</th><th>备注</th><th></th></tr>
+      ${list.slice(0, 60).map(l => `<tr><td>${l.date.slice(5)}</td>
+        <td><span class="pill ${l.type === 'in' ? 'p-low' : 'p-high'}">${l.type === 'in' ? '收入' : '支出'}</span></td>
+        <td>${esc(l.cat)}</td>
+        <td class="num ${l.type === 'in' ? 'pos' : 'neg'}">${l.type === 'in' ? '+' : '-'}${money(l.amount)}</td>
+        <td>${esc(l.note || '')}</td>
+        <td><button class="mini" data-act="edit-ledger" data-id="${l.id}">✎</button>
+        <button class="mini" data-act="del-ledger" data-id="${l.id}">✕</button></td></tr>`).join('') || `<tr><td colspan="6">${emptyBox('还没有记账记录', '🧾')}</td></tr>`}
+    </table></div>
+  </div>`}
+
+  <h2 class="section-title">✅ 财务待办</h2>
+  <div class="grid g3">${MOD('money').subs.map(s => taskGroup('money', s)).join('')}</div>`;
+}
+
+/* ---------- 标签筛选 ---------- */
+function tagChips(mod) {
+  const tags = [...new Set(DB.tasks.filter(t => t.mod === mod).flatMap(t => t.tags || []))];
+  if (!tags.length) return '';
+  return `<div class="chips"><button class="chip ${filterTag ? '' : 'on'}" data-act="tag" data-id="">全部</button>
+    ${tags.map(t => `<button class="chip ${filterTag === t ? 'on' : ''}" data-act="tag" data-id="${esc(t)}"># ${esc(t)}</button>`).join('')}</div>`;
+}
+
+/* ---------- 通用表单弹窗 ---------- */
+function openForm(cfg) {
+  const root = $('#modalRoot');
+  const f = cfg.fields.map(fd => {
+    const v = fd.val == null ? '' : fd.val;
+    let inp;
+    if (fd.type === 'select') inp = `<select name="${fd.k}">${fd.opts.map(o => `<option value="${esc(o.v)}" ${String(o.v) === String(v) ? 'selected' : ''}>${esc(o.t)}</option>`).join('')}</select>`;
+    else if (fd.type === 'textarea') inp = `<textarea name="${fd.k}" placeholder="${esc(fd.ph || '')}">${esc(v)}</textarea>`;
+    else inp = `<input name="${fd.k}" type="${fd.type || 'text'}" value="${esc(v)}" placeholder="${esc(fd.ph || '')}" ${fd.type === 'number' ? 'step="0.01"' : ''}/>`;
+    return `<div class="field" style="${fd.half ? '' : 'grid-column:1/-1'}"><label>${esc(fd.label)}</label>${inp}</div>`;
+  }).join('');
+  root.hidden = false;
+  root.innerHTML = `<div class="modal">
+    <div class="modal-h"><h3>${esc(cfg.title)}</h3><button class="icon-btn" data-act="close">✕</button></div>
+    <form class="modal-b" id="mForm"><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 10px">${f}</div></form>
+    <div class="modal-f">
+      ${cfg.onDelete ? `<button class="btn btn-g" data-act="mdel">删除</button>` : ''}
+      <button class="btn btn-g" data-act="close">取消</button>
+      <button class="btn btn-p" data-act="msave">保存</button>
+    </div>
+    <div style="height:16px"></div>
+  </div>`;
+  root.onclick = e => {
+    if (e.target === root) return closeModal();
+    const a = e.target.closest('[data-act]'); if (!a) return;
+    if (a.dataset.act === 'close') closeModal();
+    if (a.dataset.act === 'mdel') { if (confirm('确定删除吗？')) { cfg.onDelete(); closeModal(); save(); render(); } }
+    if (a.dataset.act === 'msave') {
+      const data = {};
+      new FormData($('#mForm')).forEach((v, k) => data[k] = typeof v === 'string' ? v.trim() : v);
+      if (cfg.onSave(data) !== false) { closeModal(); save(); render(); toast('已保存 ✨'); }
+    }
+  };
+  // 模块 ↔ 子分类联动
+  const modSel = root.querySelector('[name="mod"]'), subSel = root.querySelector('[name="sub"]');
+  if (modSel && subSel) {
+    const fill = keep => {
+      const subs = MOD(modSel.value).subs || [];
+      subSel.innerHTML = subs.map(s => `<option value="${esc(s)}" ${s === keep ? 'selected' : ''}>${esc(s)}</option>`).join('');
+    };
+    fill(subSel.value);
+    modSel.addEventListener('change', () => fill());
+  }
+  setTimeout(() => { const i = root.querySelector('input,textarea,select'); if (i) i.focus(); }, 60);
+}
+function closeModal() { const r = $('#modalRoot'); r.hidden = true; r.innerHTML = ''; }
+
+/* ---------- 各类编辑器 ---------- */
+const modOpts = MODULES.filter(m => m.id !== 'dash').map(m => ({ v: m.id, t: m.name }));
+function taskForm(t, presetMod, presetSub) {
+  const isNew = !t;
+  t = t || { mod: presetMod || 'anan', sub: presetSub || '', pri: 'mid', repeat: 'once', tags: [], doneKeys: [] };
+  const m = MOD(t.mod);
+  openForm({
+    title: isNew ? '新建待办' : '编辑待办',
+    fields: [
+      { k: 'title', label: '任务内容 *', val: t.title, ph: '例如：口算练习 100 题' },
+      { k: 'mod', label: '所属模块', type: 'select', val: t.mod, half: 1, opts: modOpts },
+      { k: 'sub', label: '子分类', type: 'select', val: t.sub || m.subs[0], half: 1, opts: (m.subs || []).map(s => ({ v: s, t: s })) },
+      { k: 'pri', label: '优先级', type: 'select', val: t.pri, half: 1, opts: [{ v: 'high', t: '🔴 高' }, { v: 'mid', t: '🟡 中' }, { v: 'low', t: '🟢 低' }] },
+      { k: 'repeat', label: '重复周期', type: 'select', val: t.repeat, half: 1, opts: Object.entries(REP).map(([v, x]) => ({ v, t: x })) },
+      { k: 'due', label: '截止日期', type: 'date', val: t.due, half: 1 },
+      { k: 'follow', label: '下次跟进日（外贸）', type: 'date', val: t.follow, half: 1 },
+      { k: 'client', label: '客户名称（选填）', val: t.client, half: 1, ph: 'DARKO' },
+      { k: 'stage', label: '客户跟进节点', type: 'select', val: t.stage, half: 1, opts: [{ v: '', t: '－ 无 －' }].concat(STAGES.map(s => ({ v: s.id, t: s.n }))) },
+      { k: 'tags', label: '标签（逗号分隔）', val: (t.tags || []).join(','), ph: '考级,备赛' },
+      { k: 'note', label: '备注', type: 'textarea', val: t.note, ph: '写点提醒给自己～' }
+    ],
+    onDelete: isNew ? null : () => { DB.tasks = DB.tasks.filter(x => x.id !== t.id); },
+    onSave: d => {
+      if (!d.title) { toast('请填写任务内容'); return false; }
+      d.tags = d.tags ? d.tags.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
+      if (isNew) DB.tasks.push(Object.assign({ id: uid(), doneKeys: [], created: TODAY() }, d));
+      else Object.assign(t, d);
+    }
+  });
+}
+function eventForm(e, mod) {
+  const isNew = !e; e = e || { mod: mod || 'anan', date: TODAY(), type: '比赛' };
+  openForm({
+    title: isNew ? '新增赛事 / 考级' : '编辑赛事',
+    fields: [
+      { k: 'title', label: '名称 *', val: e.title, ph: '中国舞四级考级' },
+      { k: 'date', label: '日期', type: 'date', val: e.date, half: 1 },
+      { k: 'type', label: '类型', type: 'select', val: e.type, half: 1, opts: ['比赛', '考级', '演出', '报名', '家长会', '其他'].map(v => ({ v, t: v })) },
+      { k: 'mod', label: '归属', type: 'select', val: e.mod, half: 1, opts: modOpts },
+      { k: 'note', label: '备注 / 需准备', type: 'textarea', val: e.note }
+    ],
+    onDelete: isNew ? null : () => { DB.events = DB.events.filter(x => x.id !== e.id); },
+    onSave: d => { if (!d.title) { toast('请填写名称'); return false; } isNew ? DB.events.push(Object.assign({ id: uid() }, d)) : Object.assign(e, d); }
+  });
+}
+function subjectForm(mod) {
+  openForm({
+    title: '新增打卡项目',
+    fields: [
+      { k: 'name', label: '名称 *', ph: '例如：书法练习' },
+      { k: 'emoji', label: '图标', val: '⭐', half: 1 },
+      { k: 'goal', label: '每周目标次数', type: 'number', val: 5, half: 1 }
+    ],
+    onSave: d => { if (!d.name) return false; DB.subjects.push({ id: uid(), mod, name: d.name, emoji: d.emoji || '⭐', goal: Number(d.goal) || 5 }); }
+  });
+}
+function ledgerForm(l, book) {
+  const isNew = !l; l = l || { book: book || ledgerBook, type: 'out', date: TODAY(), amount: '' };
+  const cats = (CATS[l.book] || CATS.home).concat(['工资收入', '其他收入']);
+  openForm({
+    title: isNew ? '记一笔' : '编辑记账',
+    fields: [
+      { k: 'amount', label: '金额 *', type: 'number', val: l.amount, half: 1, ph: '0.00' },
+      { k: 'type', label: '收支', type: 'select', val: l.type, half: 1, opts: [{ v: 'out', t: '支出' }, { v: 'in', t: '收入' }] },
+      { k: 'book', label: '账本', type: 'select', val: l.book, half: 1, opts: Object.entries(LEDGER_BOOKS).filter(([k]) => k !== 'invest').map(([v, t]) => ({ v, t })) },
+      { k: 'date', label: '日期', type: 'date', val: l.date, half: 1 },
+      { k: 'cat', label: '分类', type: 'select', val: l.cat, opts: [...new Set(cats)].map(v => ({ v, t: v })) },
+      { k: 'note', label: '备注', val: l.note }
+    ],
+    onDelete: isNew ? null : () => { DB.ledger = DB.ledger.filter(x => x.id !== l.id); },
+    onSave: d => {
+      if (!d.amount) { toast('请填写金额'); return false; }
+      d.amount = Number(d.amount);
+      isNew ? DB.ledger.push(Object.assign({ id: uid() }, d)) : Object.assign(l, d);
+      ledgerBook = d.book;
+    }
+  });
+}
+function holdForm(h) {
+  const isNew = !h; h = h || {};
+  openForm({
+    title: isNew ? '新增理财项目' : '编辑理财项目',
+    fields: [
+      { k: 'name', label: '项目名称 *', val: h.name },
+      { k: 'type', label: '类型', type: 'select', val: h.type, half: 1, opts: ['现金管理', '基金定投', '存款', '保险', '股票', '其他'].map(v => ({ v, t: v })) },
+      { k: 'cost', label: '投入本金', type: 'number', val: h.cost, half: 1 },
+      { k: 'value', label: '当前市值', type: 'number', val: h.value, half: 1 },
+      { k: 'note', label: '备注', val: h.note, half: 1 }
+    ],
+    onDelete: isNew ? null : () => { DB.holdings = DB.holdings.filter(x => x.id !== h.id); },
+    onSave: d => { if (!d.name) return false; d.cost = Number(d.cost) || 0; d.value = Number(d.value) || 0; isNew ? DB.holdings.push(Object.assign({ id: uid() }, d)) : Object.assign(h, d); }
+  });
+}
+function noteForm(n) {
+  const isNew = !n; n = n || {};
+  openForm({
+    title: isNew ? '收集爆款笔记' : '编辑爆款笔记',
+    fields: [
+      { k: 'title', label: '笔记标题 *', val: n.title },
+      { k: 'author', label: '博主', val: n.author, half: 1 },
+      { k: 'likes', label: '点赞数', type: 'number', val: n.likes, half: 1 },
+      { k: 'link', label: '链接', val: n.link },
+      { k: 'points', label: '可借鉴点', type: 'textarea', val: n.points, ph: '封面 / 标题 / 结构 / 引导话术' },
+      { k: 'tags', label: '标签（逗号分隔）', val: (n.tags || []).join(',') }
+    ],
+    onDelete: isNew ? null : () => { DB.xnotes = DB.xnotes.filter(x => x.id !== n.id); },
+    onSave: d => {
+      if (!d.title) return false;
+      d.tags = d.tags ? d.tags.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
+      d.likes = Number(d.likes) || 0;
+      isNew ? DB.xnotes.push(Object.assign({ id: uid() }, d)) : Object.assign(n, d);
+    }
+  });
+}
+function topicForm(t) {
+  const isNew = !t; t = t || { status: 'idea' };
+  openForm({
+    title: isNew ? '新增选题' : '编辑选题',
+    fields: [
+      { k: 'title', label: '选题标题 *', val: t.title },
+      { k: 'status', label: '当前状态', type: 'select', val: t.status, half: 1, opts: XSTATUS.map(s => ({ v: s.id, t: s.n })) },
+      { k: 'date', label: '计划发布日', type: 'date', val: t.date, half: 1 },
+      { k: 'tags', label: '标签（逗号分隔）', val: (t.tags || []).join(',') },
+      { k: 'note', label: '拍摄 / 文案要点', type: 'textarea', val: t.note }
+    ],
+    onDelete: isNew ? null : () => { DB.xtopics = DB.xtopics.filter(x => x.id !== t.id); },
+    onSave: d => {
+      if (!d.title) return false;
+      d.tags = d.tags ? d.tags.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
+      isNew ? DB.xtopics.push(Object.assign({ id: uid() }, d)) : Object.assign(t, d);
+    }
+  });
+}
+function postForm(p) {
+  const isNew = !p; p = p || { date: TODAY() };
+  const nf = (k, l) => ({ k, label: l, type: 'number', val: p[k], half: 1 });
+  openForm({
+    title: isNew ? '记录发布数据' : '编辑发布数据',
+    fields: [
+      { k: 'title', label: '笔记标题 *', val: p.title },
+      { k: 'date', label: '发布日期', type: 'date', val: p.date, half: 1 },
+      nf('views', '曝光量'), nf('likes', '点赞'), nf('favs', '收藏'),
+      nf('comments', '评论'), nf('fans', '涨粉'), nf('leads', '到店咨询')
+    ],
+    onDelete: isNew ? null : () => { DB.xposts = DB.xposts.filter(x => x.id !== p.id); },
+    onSave: d => {
+      if (!d.title) return false;
+      ['views', 'likes', 'favs', 'comments', 'fans', 'leads'].forEach(k => d[k] = Number(d[k]) || 0);
+      isNew ? DB.xposts.push(Object.assign({ id: uid() }, d)) : Object.assign(p, d);
+    }
+  });
+}
+function bookForm(b) {
+  const isNew = !b; b = b || {};
+  openForm({
+    title: isNew ? '添加书籍' : '编辑书籍',
+    fields: [
+      { k: 'title', label: '书名 *', val: b.title },
+      { k: 'current', label: '已读页数', type: 'number', val: b.current, half: 1 },
+      { k: 'total', label: '总页数', type: 'number', val: b.total, half: 1 },
+      { k: 'note', label: '分类 / 备注', val: b.note }
+    ],
+    onDelete: isNew ? null : () => { DB.books = DB.books.filter(x => x.id !== b.id); },
+    onSave: d => { if (!d.title) return false; d.current = Number(d.current) || 0; d.total = Number(d.total) || 1; isNew ? DB.books.push(Object.assign({ id: uid() }, d)) : Object.assign(b, d); }
+  });
+}
+function shopForm() {
+  openForm({
+    title: '添加购物项',
+    fields: [
+      { k: 'name', label: '物品 *' },
+      { k: 'cat', label: '分类', type: 'select', half: 1, opts: ['学习', '母婴', '个人', '日用', '服饰', '其他'].map(v => ({ v, t: v })) },
+      { k: 'price', label: '预算金额', type: 'number', half: 1 }
+    ],
+    onSave: d => { if (!d.name) return false; DB.shopping.push({ id: uid(), name: d.name, cat: d.cat, price: Number(d.price) || 0, done: false }); }
+  });
+}
+
+/* ---------- 设置 / 同步 ---------- */
+function openSettings() {
+  const s = DB.sync || {};
+  const root = $('#modalRoot'); root.hidden = false;
+  const sameOrigin = location.origin && location.origin.indexOf('http') === 0 && !location.origin.endsWith('null');
+  const conn = (esConn && esConn.readyState === 1) ? '🟢 已连接实时同步' : (s.auto && s.url ? '🟡 轮询同步中（每30秒）' : '⚪ 未连接');
+  root.innerHTML = `<div class="modal">
+    <div class="modal-h"><h3>⚙ 数据与手机同步</h3><button class="icon-btn" data-act="close">✕</button></div>
+    <div class="modal-b">
+      <div class="card" style="box-shadow:none;background:var(--grad-soft);border:none;margin-bottom:14px">
+        <b style="font-size:13px">📱 在手机上使用</b>
+        <div class="t-note" style="font-size:12px;line-height:1.8;margin-top:6px">
+          1. 手机和电脑打开<b>同一个网址</b>（本页地址）<br>
+          2. Safari「分享 → 添加到主屏幕」/ 安卓「添加到桌面」，即可像 App 一样打开<br>
+          3. 点下面「使用当前网址」并开启自动同步，手机电脑就<b>实时一致</b>啦
+        </div>
+      </div>
+      ${sameOrigin ? `<button class="btn btn-soft btn-block" data-act="use-origin" style="margin-bottom:12px">📡 使用当前网址作为同步地址</button>` : ''}
+      <div class="field"><label>云同步地址（支持「妈妈同步服务端」或 JSONBin）</label>
+        <input id="syncUrl" value="${esc(s.url || '')}" placeholder="https://你的服务地址.onrender.com"/></div>
+      <div class="field"><label>访问密钥（可选）</label>
+        <input id="syncKey" value="${esc(s.key || '')}" placeholder="与同步服务端 SYNC_KEY 一致即可"/></div>
+      <div class="field"><label><input type="checkbox" id="syncAuto" ${s.auto ? 'checked' : ''} style="width:auto;margin-right:6px"/> 开启自动同步（改动后自动上传 + 实时接收其他设备更新）</label></div>
+      <div class="seg" style="margin-bottom:10px">
+        <button data-act="sync-push">⬆️ 上传到云端</button>
+        <button data-act="sync-pull">⬇️ 从云端拉取</button>
+      </div>
+      <div style="font-size:12px;margin-bottom:14px;color:var(--muted)">
+        同步状态：${conn} ｜ 最近同步：${s.last ? new Date(s.last).toLocaleString('zh-CN') : '尚未同步'}
+      </div>
+      <div class="seg">
+        <button data-act="export">💾 导出备份</button>
+        <button data-act="import">📂 导入备份</button>
+        <button data-act="reset">♻️ 恢复示例</button>
+      </div>
+    </div>
+    <div class="modal-f"><button class="btn btn-p btn-block" data-act="save-set">保存设置</button></div>
+    <div style="height:16px"></div>
+  </div>`;
+  root.onclick = e => {
+    if (e.target === root) return closeModal();
+    const a = e.target.closest('[data-act]'); if (!a) return;
+    const act = a.dataset.act;
+    if (act === 'close') closeModal();
+    if (act === 'use-origin') { if ($('#syncUrl')) $('#syncUrl').value = location.origin; toast('已填入当前网址，记得开启自动同步 👍'); }
+    if (act === 'save-set') { grabSync(); save(); connectStream(); closeModal(); toast('设置已保存'); }
+    if (act === 'sync-push') { grabSync(); save(false); syncPush(true); }
+    if (act === 'sync-pull') { grabSync(); save(false); syncPull(true); }
+    if (act === 'export') exportJSON();
+    if (act === 'import') importJSON();
+    if (act === 'reset') { if (confirm('将清空当前数据并恢复示例内容，确定？')) { DB = seed(); save(); closeModal(); render(); toast('已恢复示例数据'); } }
+  };
+}
+function grabSync() {
+  DB.sync = DB.sync || {};
+  DB.sync.url = ($('#syncUrl') || {}).value || '';
+  DB.sync.key = ($('#syncKey') || {}).value || '';
+  DB.sync.auto = !!($('#syncAuto') || {}).checked;
+}
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `妈妈工作台备份_${TODAY()}.json`;
+  a.click(); toast('备份已下载');
+}
+function importJSON() {
+  const i = document.createElement('input'); i.type = 'file'; i.accept = '.json';
+  i.onchange = () => {
+    const f = i.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { try { DB = Object.assign(seed(), JSON.parse(r.result)); save(); closeModal(); render(); toast('导入成功 ✨'); } catch (e) { toast('文件格式不对'); } };
+    r.readAsText(f);
+  };
+  i.click();
+}
+let syncTimer = null;
+let esConn = null;
+function isJsonbin() { return !!(DB.sync && DB.sync.url && DB.sync.url.includes('jsonbin')); }
+function syncBaseUrl() {
+  const u = (DB.sync.url || '').replace(/\/+$/, '');
+  return isJsonbin() ? u : u + '/api/db';
+}
+function syncHeaders() {
+  const h = { 'Content-Type': 'application/json' };
+  if (DB.sync.key) h['X-Sync-Key'] = DB.sync.key;
+  if (isJsonbin() && DB.sync.key) { h['X-Master-Key'] = DB.sync.key; h['X-Access-Key'] = DB.sync.key; }
+  return h;
+}
+function syncQuery() {
+  return (DB.sync && DB.sync.key && !isJsonbin()) ? ('?key=' + encodeURIComponent(DB.sync.key)) : '';
+}
+function queueSync() {
+  if (!DB.sync || !DB.sync.auto || !DB.sync.url) return;
+  clearTimeout(syncTimer); syncTimer = setTimeout(() => syncPush(false), 2000);
+}
+async function syncPush(loud) {
+  if (!DB.sync || !DB.sync.url) { if (loud) toast('请先填写同步地址'); return; }
+  try {
+    const r = await fetch(syncBaseUrl() + syncQuery(), { method: 'PUT', headers: syncHeaders(), body: JSON.stringify(DB) });
+    if (!r.ok) throw new Error('status ' + r.status);
+    DB.sync.last = Date.now(); localStorage.setItem(KEY, JSON.stringify(DB));
+    if (loud) { toast('已上传到云端 ☁️'); openSettings(); }
+  } catch (e) { if (loud) toast('上传失败，请检查地址'); }
+}
+async function syncPull(loud) {
+  if (!DB.sync || !DB.sync.url) { if (loud) toast('请先填写同步地址'); return; }
+  try {
+    const url = isJsonbin()
+      ? (DB.sync.url.replace(/\/+$/, '') + (DB.sync.url.endsWith('/latest') ? '' : '/latest'))
+      : syncBaseUrl() + syncQuery();
+    const r = await fetch(url, { headers: syncHeaders() });
+    const j = await r.json();
+    const remote = j && j.record ? j.record : j;
+    if (remote && remote.meta) {
+      if (remote.meta.updatedAt >= (DB.meta.updatedAt || 0)) {
+        const keepSync = DB.sync;
+        DB = Object.assign(seed(), remote); DB.sync = keepSync; DB.sync.last = Date.now();
+        localStorage.setItem(KEY, JSON.stringify(DB));
+        render(); if (loud) { toast('已拉取云端数据 ☁️'); openSettings(); }
+      } else if (loud) toast('本地数据更新，无需拉取');
+    } else if (loud) toast('云端还没有数据，先上传一次吧');
+  } catch (e) { if (loud) toast('拉取失败，请检查地址'); }
+}
+function connectStream() {
+  if (esConn) { try { esConn.close(); } catch (e) {} esConn = null; }
+  if (!DB.sync || !DB.sync.auto || !DB.sync.url || isJsonbin()) return; // SSE 仅自有服务端支持
+  try {
+    const u = (DB.sync.url.replace(/\/+$/, '')) + '/api/stream' + syncQuery();
+    esConn = new EventSource(u);
+    esConn.onmessage = () => { if ($('#modalRoot').hidden) syncPull(false); };
+    esConn.onerror = () => { /* 浏览器会自动重连 */ };
+  } catch (e) {}
+}
+// 每 30 秒保底拉取一次（SSE 的补充，防止极端断连）
+setInterval(() => { if (DB.sync && DB.sync.auto && DB.sync.url && $('#modalRoot').hidden) syncPull(false); }, 30000);
+
+/* ---------- 小反馈 ---------- */
+let toastT;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 1900);
+}
+function confetti() {
+  const emo = ['🎉', '✨', '💖', '🌟', '🌸'];
+  for (let i = 0; i < 6; i++) {
+    const s = document.createElement('div');
+    s.textContent = emo[Math.floor(Math.random() * emo.length)];
+    s.style.cssText = `position:fixed;left:${40 + Math.random() * 20}%;top:55%;font-size:${16 + Math.random() * 12}px;
+      pointer-events:none;z-index:300;transition:all .9s cubic-bezier(.2,.8,.3,1);opacity:1`;
+    document.body.appendChild(s);
+    requestAnimationFrame(() => {
+      s.style.transform = `translate(${(Math.random() - .5) * 240}px,${-80 - Math.random() * 120}px) rotate(${(Math.random() - .5) * 180}deg)`;
+      s.style.opacity = '0';
+    });
+    setTimeout(() => s.remove(), 950);
+  }
+}
+
+/* ---------- 事件委托 ---------- */
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  if (a.closest('.modal')) return;
+  const { act, id, mod, sub, sid, d } = a.dataset;
+  switch (act) {
+    case 'tab': TAB = id; filterTag = ''; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'tg': toggleTask(id); break;
+    case 'edit-task': taskForm(DB.tasks.find(t => t.id === id)); break;
+    case 'del-task': if (confirm('删除这条待办？')) { DB.tasks = DB.tasks.filter(t => t.id !== id); save(); render(); } break;
+    case 'add-task': taskForm(null, mod, sub); break;
+    case 'ck': toggleCk(sid, d); break;
+    case 'wk': weekStart = addDays(weekStart, Number(d) * 7); render(); break;
+    case 'add-subject': subjectForm(mod); break;
+    case 'add-ev': eventForm(null, mod); break;
+    case 'edit-ev': eventForm(DB.events.find(x => x.id === id)); break;
+    case 'del-ev': if (confirm('删除该提醒？')) { DB.events = DB.events.filter(x => x.id !== id); save(); render(); } break;
+    case 'tag': filterTag = id; render(); break;
+    case 'book': ledgerBook = id; render(); break;
+    case 'add-ledger': ledgerForm(null, a.dataset.book); break;
+    case 'edit-ledger': ledgerForm(DB.ledger.find(x => x.id === id)); break;
+    case 'del-ledger': if (confirm('删除这笔记账？')) { DB.ledger = DB.ledger.filter(x => x.id !== id); save(); render(); } break;
+    case 'add-hold': holdForm(); break;
+    case 'edit-hold': holdForm(DB.holdings.find(x => x.id === id)); break;
+    case 'del-hold': if (confirm('删除该理财项目？')) { DB.holdings = DB.holdings.filter(x => x.id !== id); save(); render(); } break;
+    case 'add-note': noteForm(); break;
+    case 'edit-note': noteForm(DB.xnotes.find(x => x.id === id)); break;
+    case 'del-note': if (confirm('删除该笔记？')) { DB.xnotes = DB.xnotes.filter(x => x.id !== id); save(); render(); } break;
+    case 'add-topic': topicForm(); break;
+    case 'edit-topic': topicForm(DB.xtopics.find(x => x.id === id)); break;
+    case 'add-post': postForm(); break;
+    case 'edit-post': postForm(DB.xposts.find(x => x.id === id)); break;
+    case 'del-post': if (confirm('删除该条数据？')) { DB.xposts = DB.xposts.filter(x => x.id !== id); save(); render(); } break;
+    case 'add-book': bookForm(); break;
+    case 'edit-book': bookForm(DB.books.find(x => x.id === id)); break;
+    case 'del-book': if (confirm('删除这本书？')) { DB.books = DB.books.filter(x => x.id !== id); save(); render(); } break;
+    case 'add-shop': shopForm(); break;
+    case 'tg-shop': { const s = DB.shopping.find(x => x.id === id); s.done = !s.done; if (s.done) confetti(); save(); render(); break; }
+    case 'del-shop': DB.shopping = DB.shopping.filter(x => x.id !== id); save(); render(); break;
+  }
+});
+$('#btnQuickAdd').onclick = () => taskForm(null, TAB === 'dash' ? 'anan' : TAB);
+$('#btnSettings').onclick = openSettings;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ---------- 启动 ---------- */
+render();
+if (DB.sync && DB.sync.auto && DB.sync.url) { syncPull(false); connectStream(); }
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => { }); }

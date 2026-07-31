@@ -1,0 +1,19 @@
+# 一键部署到 Render（免费额度即可）
+# 1. 把 mama-hub 目录推到 GitHub 仓库
+# 2. 打开 https://render.com  -> New -> Bluepint -> 选择该仓库
+# 3. 会自动读取本文件创建 Web 服务；部署完成后得到一个公开网址
+# 4. 手机和电脑都打开这个网址 -> 设置里点「使用当前网址作为同步地址」-> 实时同步
+services:
+  - type: web
+    name: mama-hub
+    runtime: node
+    plan: free
+    buildCommand: "true"
+    startCommand: "node sync-server.js"
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: "3001"
+      # 可选：设置后所有同步需带 ?key= 或 X-Sync-Key
+      # - key: SYNC_KEY
+      #   sync: false

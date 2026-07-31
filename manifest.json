@@ -1,0 +1,12 @@
+{
+  "name": "妈妈的小宇宙 · 综合管理工作台",
+  "short_name": "妈妈工作台",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fff5fb",
+  "theme_color": "#ff8fc7",
+  "description": "二胎妈妈的育儿 / 外贸 / 自媒体 / 生活 / 财务一体化管理台",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
