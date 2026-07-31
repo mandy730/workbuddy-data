@@ -1,0 +1,19 @@
+# Koyeb 部署配置（放在仓库根目录，Koyeb 会自动读取）
+# 部署方式：在 Koyeb 控制台用 GitHub 连接本仓库即可一键部署
+app: mama-hub
+services:
+  - name: sync
+    git:
+      # ⚠️ 把 <你的GitHub用户名> 换成你真实的 GitHub 用户名（仓库已叫 workbuddy-data）
+      repo: github.com/<你的GitHub用户名>/workbuddy-data
+      branch: main
+    run_command: node sync-server.js
+    ports:
+      - port: 3000
+        type: http
+    scaling:
+      min: 1
+      max: 1
+    env:
+      - key: NODE_ENV
+        value: production
