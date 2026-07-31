@@ -5,7 +5,7 @@ services:
   - name: sync
     git:
       # ⚠️ 把 <你的GitHub用户名> 换成你真实的 GitHub 用户名（仓库已叫 workbuddy-data）
-      repo: github.com/<你的GitHub用户名>/workbuddy-data
+      repo: github.com/mandy730/workbuddy-data
       branch: main
     run_command: node sync-server.js
     ports:
