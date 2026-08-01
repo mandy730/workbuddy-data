@@ -116,7 +116,9 @@ body{
 
 /* ---- 安安日程时间线 ---- */
 .sched{display:flex;flex-direction:column;padding:4px 2px}
-.sched-i{display:grid;grid-template-columns:66px 14px 1fr 26px;align-items:center;gap:10px;padding:11px 4px;cursor:pointer;transition:background .15s}
+.sched-i{display:grid;grid-template-columns:66px 14px 1fr 26px 26px;align-items:center;gap:10px;padding:11px 4px;transition:background .15s}
+.sched-i.cl{cursor:pointer}
+.sched-i.cl:hover{background:var(--pink-50)}
 .sched-i:hover{background:var(--pink-50)}
 .sched-i+.sched-i{border-top:1px dashed var(--line)}
 .sched-t{font-size:11.5px;font-weight:800;color:var(--pink-600);text-align:center;background:var(--pink-50);border-radius:10px;padding:5px 3px;line-height:1.15;white-space:nowrap}
@@ -128,6 +130,17 @@ body{
 .sched-i.done .sched-body b{text-decoration:line-through;color:var(--muted)}
 .sched-i.done .sched-t{opacity:.55}
 .sched-i.done .sched-line{opacity:.4}
+.sched-all{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.sched-day-h{font-size:12.5px;font-weight:800;color:var(--pink-600);margin:2px 0 4px;display:flex;align-items:center;gap:7px}
+.today-dot{font-size:10px;font-weight:800;color:#fff;background:var(--pink-500);border-radius:999px;padding:1px 7px}
+.sched-ck.off{color:var(--muted);opacity:.5}
+/* 星期多选 */
+.wk-pick{display:flex;flex-wrap:wrap;gap:8px}
+.wk-chip{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--ink-2);
+  font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.wk-chip:hover{border-color:var(--pink-200)}
+.wk-chip.on{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 4px 10px rgba(247,107,176,.28)}
+@media(max-width:900px){.wk-chip{width:36px;height:36px}}
 
 /* ---- Hero / 欢迎区 ---- */
 .hero{background:var(--grad);border-radius:24px;padding:20px;color:#fff;box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
@@ -952,28 +965,54 @@ function importSummerPlan() {
   save(); render(); toast('📥 暑假计划已导入，开始打卡吧！');
 }
 
-/* ---------- 安安日程：今日固定课表（按星期几） + 时间排序 + 按天打卡 ---------- */
+/* ---------- 安安日程：固定课表（按星期几分组）+ 时间排序 + 今日可打卡 + 可编辑 ---------- */
 function schedKey(it) { return ymd(new Date()) + '|' + it.id; }
+const WK_LABEL = ['日', '一', '二', '三', '四', '五', '六'];
 function ananSchedule() {
   const today = new Date().getDay();
-  const items = (DB.schedule || []).filter(it => (it.days || []).includes(today)).map(it => {
-    const m = (it.time || '').match(/^(\d{1,2}):(\d{2})/);
-    const start = m ? (+m[1]) * 60 + (+m[2]) : 9999;
-    return { it, start };
-  }).sort((a, b) => a.start - b.start);
-  if (!items.length) return emptyBox('今天没有排课，出去玩吧 🌈', '🗓');
-  return `<div class="sched">${items.map(({ it }) => {
-    const done = (DB.schedCk || []).includes(schedKey(it));
-    return `<div class="sched-i ${done ? 'done' : ''}" data-act="sched" data-id="${it.id}">
-      <span class="sched-t">${esc(it.time)}</span>
-      <span class="sched-line"></span>
-      <div class="sched-body">
-        <b>${esc(it.title)}</b>
-        <span class="sched-sub">${esc(it.sub || '')}</span>
-      </div>
-      <span class="sched-ck">${done ? '✅' : '⬜'}</span>
-    </div>`;
-  }).join('')}</div>`;
+  const all = DB.schedule || [];
+  if (!all.length) return emptyBox('还没排课，点右上角「＋ 添加课程」🗓', '🗓');
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const byStart = it => { const m = (it.time || '').match(/^(\d{1,2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : 9999; };
+  let html = '';
+  order.forEach(d => {
+    const items = all.filter(it => (it.days || []).includes(d)).sort((a, b) => byStart(a) - byStart(b));
+    if (!items.length) return;
+    html += `<div class="sched-day"><div class="sched-day-h">周${WK_LABEL[d]}${d === today ? ' <span class="today-dot">今天</span>' : ''}</div>`;
+    html += items.map(it => {
+      const isToday = (it.days || []).includes(today);
+      const done = isToday && (DB.schedCk || []).includes(schedKey(it));
+      return `<div class="sched-i ${done ? 'done' : ''} ${isToday ? 'cl' : ''}" ${isToday ? `data-act="sched" data-id="${it.id}"` : ''}>
+        <span class="sched-t">${esc(it.time)}</span>
+        <span class="sched-line"></span>
+        <div class="sched-body"><b>${esc(it.title)}</b>${it.sub ? `<span class="sched-sub">${esc(it.sub)}</span>` : ''}</div>
+        <button class="mini" data-act="edit-sched" data-id="${it.id}" title="编辑">✎</button>
+        ${isToday ? `<span class="sched-ck">${done ? '✅' : '⬜'}</span>` : '<span class="sched-ck off">—</span>'}
+      </div>`;
+    }).join('');
+    html += `</div>`;
+  });
+  return `<div class="sched-all">${html}</div>`;
+}
+function scheduleForm(it) {
+  const isNew = !it;
+  it = it || { days: [1], time: '18:30-20:00', title: '', sub: '' };
+  openForm({
+    title: isNew ? '新增日程课程' : '编辑日程课程',
+    fields: [
+      { k: 'title', label: '课程名称 *', val: it.title, ph: '例如：乒乓球' },
+      { k: 'sub', label: '类别', val: it.sub, half: 1, ph: '体育 / 英语 / 数独' },
+      { k: 'time', label: '时间', val: it.time, half: 1, ph: '18:30-20:00' },
+      { k: 'days', label: '星期几（可多选）', type: 'weekdays', val: (it.days || []).join(',') }
+    ],
+    onDelete: isNew ? null : () => { DB.schedule = DB.schedule.filter(x => x.id !== it.id); },
+    onSave: d => {
+      if (!d.title) { toast('请填写课程名称'); return false; }
+      d.days = (d.days ? String(d.days).split(',').filter(Boolean) : []).map(Number);
+      if (isNew) DB.schedule.push(Object.assign({ id: uid() }, d));
+      else Object.assign(it, d);
+    }
+  });
 }
 function toggleSched(id) {
   DB.schedCk = DB.schedCk || [];
@@ -992,8 +1031,11 @@ function viewAnan() {
   ${tagChips('anan')}
   <div class="grid g2">${MOD('anan').subs.map(s => taskGroup('anan', s)).join('')}</div>
 
-  <h2 class="section-title">🗓 安安日程 <small>今日时间计划 · 点一下打卡</small></h2>
-  <div class="card">${ananSchedule()}</div>
+  <h2 class="section-title">🗓 安安日程 <small>固定课表 · 点今日课程可打卡</small></h2>
+  <div class="card">
+    <div class="card-h"><h3>课程表</h3><button class="btn btn-g btn-sm" data-act="add-sched">＋ 添加课程</button></div>
+    ${ananSchedule()}
+  </div>
 
   <h2 class="section-title">🏆 赛事 / 考级提醒 <small>自动倒计时</small></h2>
   <div class="card">
@@ -1279,6 +1321,11 @@ function openForm(cfg) {
     let inp;
     if (fd.type === 'select') inp = `<select name="${fd.k}">${fd.opts.map(o => `<option value="${esc(o.v)}" ${String(o.v) === String(v) ? 'selected' : ''}>${esc(o.t)}</option>`).join('')}</select>`;
     else if (fd.type === 'textarea') inp = `<textarea name="${fd.k}" placeholder="${esc(fd.ph || '')}">${esc(v)}</textarea>`;
+    else if (fd.type === 'weekdays') {
+      const WK = [['一', 1], ['二', 2], ['三', 3], ['四', 4], ['五', 5], ['六', 6], ['日', 0]];
+      const sel = new Set(String(v).split(',').filter(Boolean));
+      inp = `<div class="wk-pick">${WK.map(([w, d]) => `<button type="button" class="wk-chip ${sel.has(String(d)) ? 'on' : ''}" data-d="${d}">${w}</button>`).join('')}</div><input type="hidden" name="${fd.k}" value="${esc(String(v))}"/>`;
+    }
     else inp = `<input name="${fd.k}" type="${fd.type || 'text'}" value="${esc(v)}" placeholder="${esc(fd.ph || '')}" ${fd.type === 'number' ? 'step="0.01"' : ''}/>`;
     return `<div class="field" style="${fd.half ? '' : 'grid-column:1/-1'}"><label>${esc(fd.label)}</label>${inp}</div>`;
   }).join('');
@@ -1314,6 +1361,16 @@ function openForm(cfg) {
     fill(subSel.value);
     modSel.addEventListener('change', () => fill());
   }
+  // 星期几多选 chip
+  root.querySelectorAll('.wk-pick').forEach(pick => {
+    const hid = pick.parentElement.querySelector('input[type="hidden"]');
+    pick.querySelectorAll('.wk-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('on');
+        hid.value = [...pick.querySelectorAll('.wk-chip.on')].map(c => c.dataset.d).join(',');
+      });
+    });
+  });
   setTimeout(() => { const i = root.querySelector('input,textarea,select'); if (i) i.focus(); }, 60);
 }
 function closeModal() { const r = $('#modalRoot'); r.hidden = true; r.innerHTML = ''; }
@@ -1692,6 +1749,8 @@ document.addEventListener('click', e => {
     case 'add-subject': subjectForm(mod); break;
     case 'import-plan': importSummerPlan(); break;
     case 'sched': toggleSched(id); break;
+    case 'add-sched': scheduleForm(null); break;
+    case 'edit-sched': scheduleForm(DB.schedule.find(x => x.id === id)); break;
     case 'add-ev': eventForm(null, mod); break;
     case 'edit-ev': eventForm(DB.events.find(x => x.id === id)); break;
     case 'del-ev': if (confirm('删除该提醒？')) { DB.events = DB.events.filter(x => x.id !== id); save(); render(); } break;
