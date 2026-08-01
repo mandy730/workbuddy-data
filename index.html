@@ -416,10 +416,10 @@ const WD = ['一', '二', '三', '四', '五', '六', '日'];
 const MODULES = [
   { id: 'dash', name: '首页仪表盘', emoji: '🏠' },
   { id: 'anan', name: '安安教育', emoji: '🌸', kind: 'parenting', desc: '7岁 · 二年级', subs: ['数学', '语文', '英语', '数独', '中国舞'] },
-  { id: 'ning', name: '宁宁教育', emoji: '🍼', kind: 'parenting', desc: '4岁 · 英语启蒙', subs: ['英语启蒙', '亲子早教'] },
+  { id: 'ning', name: '宁宁教育', emoji: '🍼', kind: 'parenting', desc: '4岁 · 启蒙', subs: ['英语启蒙', '数学启蒙', '中文绘本'] },
   { id: 'trade', name: '外贸工作', emoji: '💼', kind: 'business', desc: 'DARKO · 日常 · AI', subs: ['DARKO工作', '日常工作待办', 'AI工具学习'] },
+  { id: 'life', name: '个人计划', emoji: '💃', kind: 'life', desc: '爵士舞 · 阅读 · 购物', subs: ['爵士舞', '阅读', '生活购物', '我的日程'] },
   { id: 'xhs', name: '小红书', emoji: '📕', kind: 'business', desc: '婚纱摄影引流', subs: ['爆款笔记', '选题策划', '数据统计'] },
-  { id: 'life', name: '个人计划', emoji: '💃', kind: 'life', desc: '爵士舞 · 阅读 · 购物', subs: ['爵士舞', '阅读', '生活购物'] },
   { id: 'money', name: '财务管理', emoji: '💰', kind: 'life', desc: '家庭 · 外贸 · 理财', subs: ['家庭日常', '外贸收支', '理财台账'] }
 ];
 const MOD = id => MODULES.find(m => m.id === id) || MODULES[0];
@@ -478,8 +478,12 @@ function seed() {
       t('ning', '英语启蒙', '磨耳朵动画 10 分钟', 'high', 'daily', { note: '超级简单儿歌 / Peppa Pig' }),
       t('ning', '英语启蒙', '亲子英文绘本共读 1 本', 'high', 'daily', { tags: ['亲子'] }),
       t('ning', '英语启蒙', '儿歌律动跟跳', 'mid', 'weekly'),
-      t('ning', '亲子早教', '手指游戏 / 精细动作练习', 'mid', 'weekly'),
-      t('ning', '亲子早教', '补充新绘本 & 教具', 'low', 'monthly', { tags: ['采购'] }),
+      t('ning', '数学启蒙', '数数 & 形状认知 10 分钟', 'high', 'daily'),
+      t('ning', '数学启蒙', '逻辑配对 / 分类小游戏', 'mid', 'weekly'),
+      t('ning', '数学启蒙', '生活数学：分水果 / 认数字', 'low', 'weekly'),
+      t('ning', '中文绘本', '中文绘本亲子共读 1 本', 'high', 'daily'),
+      t('ning', '中文绘本', '讲故事 / 复述练习', 'mid', 'weekly'),
+      t('ning', '中文绘本', '补充中文绘本 & 教具', 'low', 'monthly', { tags: ['采购'] }),
       t('trade', 'DARKO工作', 'DARKO 新款报价单确认', 'high', 'once', { client: 'DARKO', stage: 'quote', follow: ymd(addDays(new Date(), 1)), tags: ['报价'] }),
       t('trade', 'DARKO工作', '样品寄出并跟踪物流', 'high', 'once', { client: 'DARKO', stage: 'sample', follow: ymd(addDays(new Date(), 3)) }),
       t('trade', 'DARKO工作', '大货生产进度周跟进', 'mid', 'weekly', { client: 'DARKO', stage: 'order' }),
@@ -936,24 +940,10 @@ function viewAnan() {
 
 /* ---------- 视图：宁宁 ---------- */
 function viewNing() {
-  const s1 = DB.subjects.filter(s => s.mod === 'ning');
-  const total = s1.reduce((a, s) => a + ckWeekCount(s.id, weekStart), 0);
-  const goal = s1.reduce((a, s) => a + s.goal, 0);
   return `
-  <div class="card">
-    <div class="card-h"><h3>🍼 宁宁 · 英语启蒙亲子打卡 <span class="sub">4岁 · 每天一点点</span></h3>${weekNav()}</div>
-    ${checkinTable('ning')}
-    <div style="margin-top:12px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
-        <span>本周启蒙完成度</span><b style="color:var(--pink-600)">${total}/${goal} 次</b></div>
-      <div class="pbar"><i style="width:${goal ? Math.min(100, total / goal * 100) : 0}%"></i></div>
-    </div>
-    <button class="add-line" style="margin-top:12px" data-act="add-subject" data-mod="ning">＋ 新增启蒙打卡项</button>
-  </div>
-
-  <h2 class="section-title">🧸 亲子早教待办</h2>
+  <h2 class="section-title">🧸 亲子早教</h2>
   ${tagChips('ning')}
-  <div class="grid g2">${MOD('ning').subs.map(s => taskGroup('ning', s)).join('')}</div>
+  <div class="grid g3">${MOD('ning').subs.map(s => taskGroup('ning', s)).join('')}</div>
 
   <div class="card" style="margin-top:14px">
     <div class="card-h"><h3>💡 启蒙小贴士</h3></div>
