@@ -122,7 +122,14 @@ const server = http.createServer((req, res) => {
   fs.readFile(filePath, (err, data) => {
     if (err) { send(res, 404, 'not found'); return; }
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    const h = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
+    // 页面 / 脚本 / SW 禁用缓存，否则手机端会一直打开旧版本
+    if (['.html', '.js', '.css', '.json', '.webmanifest'].indexOf(ext) >= 0) {
+      h['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+      h['Pragma'] = 'no-cache';
+      h['Expires'] = '0';
+    }
+    res.writeHead(200, h);
     res.end(data);
   });
 });

@@ -342,6 +342,20 @@ table.data tr:last-child td{border-bottom:none}
   .sidebar{width:210px;--sidebar-w:210px}
 }
 
+/* ---- 同步状态胶囊 ---- */
+.sync-pill{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border:1px solid var(--line);
+  background:#fff;border-radius:999px;cursor:pointer;font-size:12px;color:var(--ink-2);transition:.16s;white-space:nowrap}
+.sync-pill:hover{border-color:var(--pink-200);box-shadow:var(--shadow)}
+.sync-pill i{width:8px;height:8px;border-radius:50%;background:#c9ccd4;flex:none;transition:.2s}
+.sync-pill b{font-weight:600}
+.sync-pill.live i{background:#2fbf82;box-shadow:0 0 0 3px rgba(47,191,130,.16);animation:syncBlink 2.4s infinite}
+.sync-pill.poll i{background:#f0a93b;box-shadow:0 0 0 3px rgba(240,169,59,.16)}
+.sync-pill.off i{background:#c9ccd4}
+.sync-pill.live b{color:#1f9c67}
+.sync-pill.poll b{color:#c07f14}
+@keyframes syncBlink{0%,100%{opacity:1}50%{opacity:.45}}
+@media(max-width:900px){.sync-pill b{display:none}.sync-pill{padding:0 9px}}
+
 </style>
 </head>
 <body>
@@ -376,6 +390,7 @@ table.data tr:last-child td{border-bottom:none}
           </div>
         </div>
         <div class="topbar-actions">
+          <button class="sync-pill" id="syncPill" title="同步状态，点击查看详情"><i></i><b>同步</b></button>
           <button class="icon-btn" id="btnQuickAdd" title="快速新建">＋</button>
           <button class="btn-ghost" id="btnSettings" title="数据与手机同步">⚙ 设置</button>
         </div>
@@ -450,7 +465,7 @@ function seed() {
     id: uid(), mod, sub, title, pri, repeat, due: '', tags: [], note: '', doneKeys: [], created: TODAY()
   }, extra || {});
   return {
-    meta: { v: 1, updatedAt: Date.now(), owner: '妈妈' },
+    meta: { v: 1, updatedAt: Date.now(), owner: '妈妈', mig: MIGRATIONS.map(m => m.id) },
     subjects: [
       { id: 'a-yw', mod: 'anan', name: '语文', emoji: '📖', goal: 4 },
       { id: 'a-sx', mod: 'anan', name: '数学', emoji: '🔢', goal: 4 },
@@ -570,15 +585,62 @@ function seed() {
   };
 }
 
+/* ---------- 数据迁移（版本化，每台设备只跑一次） ----------
+ * 为什么需要：老数据存在 localStorage / 云端，会整体覆盖 seed()，
+ * 所以只改 seed 的新任务永远不会出现在已有设备上。迁移在这里强制生效。 */
+const MIGRATIONS = [
+  {
+    id: 'anan-daily-2026-08',
+    run(db) {
+      const SUBS = ['数学', '语文', '英语', '数独'];
+      db.tasks = (db.tasks || []).filter(t => !(t.mod === 'anan' && SUBS.includes(t.sub)));
+      const mk = (sub, title, pri, repeat, extra) => Object.assign({
+        id: uid(), mod: 'anan', sub, title, pri, repeat, due: '2026-08-31',
+        tags: [], note: '', doneKeys: [], created: TODAY()
+      }, extra || {});
+      db.tasks.push(
+        mk('数学', '100以内加减法', 'high', 'daily'),
+        mk('数学', '乘法口算', 'high', 'daily'),
+        mk('数学', '二年级数学预习（天天练+必刷题）', 'high', 'daily'),
+        mk('数学', '奥数（天天练+华杯2页）', 'mid', 'daily'),
+        mk('语文', '阅读', 'high', 'daily'),
+        mk('语文', '看图写话', 'mid', 'daily', { tags: ['积累本'] }),
+        mk('语文', '汪勋网课', 'mid', 'daily'),
+        mk('语文', '写字', 'mid', 'daily'),
+        mk('英语', '磨耳朵40分钟', 'high', 'daily'),
+        mk('英语', '背单词', 'high', 'weekly'),
+        mk('英语', '英文绘本精读 1 本', 'mid', 'weekly'),
+        mk('英语', '桥梁书30分钟', 'mid', 'daily'),
+        mk('数独', '数独作业', 'mid', 'daily'),
+        mk('数独', 'pad训练', 'mid', 'daily')
+      );
+      const goals = { '数学': 4, '语文': 4, '英语': 4, '数独': 2 };
+      (db.subjects || []).forEach(s => { if (s.mod === 'anan' && goals[s.name]) s.goal = goals[s.name]; });
+    }
+  }
+];
+function migrate(db) {
+  db.meta = db.meta || {};
+  if (!Array.isArray(db.meta.mig)) db.meta.mig = [];
+  let changed = false;
+  MIGRATIONS.forEach(m => {
+    if (db.meta.mig.indexOf(m.id) < 0) {
+      try { m.run(db); } catch (e) { console.warn('迁移失败', m.id, e); }
+      db.meta.mig.push(m.id); changed = true;
+    }
+  });
+  return changed;
+}
+
 /* ---------- 存储 ---------- */
 const KEY = 'mama_hub_v1';
 let DB;
 function load() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) { const d = JSON.parse(raw); return Object.assign(seed(), d); }
-  } catch (e) { console.warn(e); }
-  return seed();
+  let d = null;
+  try { const raw = localStorage.getItem(KEY); if (raw) d = JSON.parse(raw); } catch (e) { console.warn(e); }
+  const db = d ? Object.assign(seed(), d) : seed();
+  migrate(db);
+  return db;
 }
 function save(push = true) {
   DB.meta.updatedAt = Date.now();
@@ -586,6 +648,11 @@ function save(push = true) {
   if (push) queueSync();
 }
 DB = load();
+
+/* ---------- 同步默认开启：同一网址的所有设备自动互通 ---------- */
+DB.sync = DB.sync || { url: '', key: '', auto: true, last: 0 };
+if (!DB.sync.url && /^https?:$/.test(location.protocol)) DB.sync.url = location.origin;
+if (DB.sync.auto !== false) DB.sync.auto = true;
 
 /* ---------- 周期任务逻辑 ---------- */
 function periodKey(task, d = new Date()) {
@@ -1439,11 +1506,12 @@ function openSettings() {
     <div class="modal-h"><h3>⚙ 数据与手机同步</h3><button class="icon-btn" data-act="close">✕</button></div>
     <div class="modal-b">
       <div class="card" style="box-shadow:none;background:var(--grad-soft);border:none;margin-bottom:14px">
-        <b style="font-size:13px">📱 在手机上使用</b>
+        <b style="font-size:13px">📱 手机 / 电脑自动同步（已默认开启）</b>
         <div class="t-note" style="font-size:12px;line-height:1.8;margin-top:6px">
-          1. 手机和电脑打开<b>同一个网址</b>（本页地址）<br>
-          2. Safari「分享 → 添加到主屏幕」/ 安卓「添加到桌面」，即可像 App 一样打开<br>
-          3. 点下面「使用当前网址」并开启自动同步，手机电脑就<b>实时一致</b>啦
+          只要两台设备打开<b>同一个网址</b>，改动会在 2 秒内互相同步，无需任何设置。<br>
+          顶栏小圆点：<b style="color:#1f9c67">绿=实时连通</b> ｜ <b style="color:#c07f14">黄=轮询中</b> ｜ 灰=未开启。<br>
+          手机上用 Safari「分享 → 添加到主屏幕」，可以像 App 一样打开。<br>
+          <b>两边内容不一致时</b>：在内容正确的那台点「⬆️ 上传到云端」，另一台点「⬇️ 从云端拉取」即可强制统一。
         </div>
       </div>
       ${sameOrigin ? `<button class="btn btn-soft btn-block" data-act="use-origin" style="margin-bottom:12px">📡 使用当前网址作为同步地址</button>` : ''}
@@ -1453,8 +1521,8 @@ function openSettings() {
         <input id="syncKey" value="${esc(s.key || '')}" placeholder="与同步服务端 SYNC_KEY 一致即可"/></div>
       <div class="field"><label><input type="checkbox" id="syncAuto" ${s.auto ? 'checked' : ''} style="width:auto;margin-right:6px"/> 开启自动同步（改动后自动上传 + 实时接收其他设备更新）</label></div>
       <div class="seg" style="margin-bottom:10px">
-        <button data-act="sync-push">⬆️ 上传到云端</button>
-        <button data-act="sync-pull">⬇️ 从云端拉取</button>
+        <button data-act="sync-push">⬆️ 上传到云端（本机为准）</button>
+        <button data-act="sync-pull">⬇️ 从云端拉取（云端为准）</button>
       </div>
       <div style="font-size:12px;margin-bottom:14px;color:var(--muted)">
         同步状态：${conn} ｜ 最近同步：${s.last ? new Date(s.last).toLocaleString('zh-CN') : '尚未同步'}
@@ -1530,7 +1598,7 @@ async function syncPush(loud) {
   try {
     const r = await fetch(syncBaseUrl() + syncQuery(), { method: 'PUT', headers: syncHeaders(), body: JSON.stringify(DB) });
     if (!r.ok) throw new Error('status ' + r.status);
-    DB.sync.last = Date.now(); localStorage.setItem(KEY, JSON.stringify(DB));
+    DB.sync.last = Date.now(); localStorage.setItem(KEY, JSON.stringify(DB)); paintSync();
     if (loud) { toast('已上传到云端 ☁️'); openSettings(); }
   } catch (e) { if (loud) toast('上传失败，请检查地址'); }
 }
@@ -1544,24 +1612,42 @@ async function syncPull(loud) {
     const j = await r.json();
     const remote = j && j.record ? j.record : j;
     if (remote && remote.meta) {
-      if (remote.meta.updatedAt >= (DB.meta.updatedAt || 0)) {
+      // loud=手动点击时强制覆盖本机；自动同步时按时间戳判断
+      if (loud || (remote.meta.updatedAt || 0) >= (DB.meta.updatedAt || 0)) {
         const keepSync = DB.sync;
         DB = Object.assign(seed(), remote); DB.sync = keepSync; DB.sync.last = Date.now();
+        // 云端可能是旧结构，拉下来后补跑迁移并回推，保证所有设备一致
+        const migrated = migrate(DB);
+        if (migrated) DB.meta.updatedAt = Date.now();
         localStorage.setItem(KEY, JSON.stringify(DB));
-        render(); if (loud) { toast('已拉取云端数据 ☁️'); openSettings(); }
+        if (migrated) syncPush(false);
+        render(); paintSync(); if (loud) { toast('已拉取云端数据 ☁️'); openSettings(); }
       } else if (loud) toast('本地数据更新，无需拉取');
     } else if (loud) toast('云端还没有数据，先上传一次吧');
   } catch (e) { if (loud) toast('拉取失败，请检查地址'); }
 }
 function connectStream() {
   if (esConn) { try { esConn.close(); } catch (e) {} esConn = null; }
-  if (!DB.sync || !DB.sync.auto || !DB.sync.url || isJsonbin()) return; // SSE 仅自有服务端支持
+  if (!DB.sync || !DB.sync.auto || !DB.sync.url || isJsonbin()) { paintSync(); return; } // SSE 仅自有服务端支持
   try {
     const u = (DB.sync.url.replace(/\/+$/, '')) + '/api/stream' + syncQuery();
     esConn = new EventSource(u);
+    esConn.onopen = paintSync;
     esConn.onmessage = () => { if ($('#modalRoot').hidden) syncPull(false); };
-    esConn.onerror = () => { /* 浏览器会自动重连 */ };
+    esConn.onerror = () => { paintSync(); /* 浏览器会自动重连 */ };
   } catch (e) {}
+  paintSync();
+}
+/* 顶栏同步状态灯：绿=实时连通，黄=轮询中，灰=未开启 */
+function paintSync() {
+  const el = $('#syncPill'); if (!el) return;
+  const on = !!(DB.sync && DB.sync.auto && DB.sync.url);
+  const live = !!(esConn && esConn.readyState === 1);
+  el.className = 'sync-pill ' + (live ? 'live' : on ? 'poll' : 'off');
+  const b = el.querySelector('b');
+  if (b) b.textContent = live ? '已同步' : on ? '同步中' : '未同步';
+  el.title = (live ? '✅ 实时同步已连接' : on ? '🟡 轮询同步中（每 30 秒）' : '⚪ 未开启同步')
+    + (DB.sync && DB.sync.last ? '\n最近同步：' + new Date(DB.sync.last).toLocaleString('zh-CN') : '');
 }
 // 每 30 秒保底拉取一次（SSE 的补充，防止极端断连）
 setInterval(() => { if (DB.sync && DB.sync.auto && DB.sync.url && $('#modalRoot').hidden) syncPull(false); }, 30000);
@@ -1635,11 +1721,20 @@ document.addEventListener('click', e => {
 });
 $('#btnQuickAdd').onclick = () => taskForm(null, TAB === 'dash' ? 'anan' : TAB);
 $('#btnSettings').onclick = openSettings;
+if ($('#syncPill')) $('#syncPill').onclick = openSettings;
+setInterval(paintSync, 5000);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 /* ---------- 启动 ---------- */
 render();
+// 迁移产生的新数据立刻落盘并推云端，让手机/电脑统一
+save();
 if (DB.sync && DB.sync.auto && DB.sync.url) { syncPull(false); connectStream(); }
+// 页面重新可见（手机切回 App）时立即拉一次，避免看到过期内容
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && DB.sync && DB.sync.auto && DB.sync.url) { syncPull(false); connectStream(); }
+});
+window.addEventListener('online', () => { if (DB.sync && DB.sync.auto && DB.sync.url) syncPull(false); });
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => { }); }
 
 </script>
