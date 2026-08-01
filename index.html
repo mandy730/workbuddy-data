@@ -369,6 +369,25 @@ table.data tr:last-child td{border-bottom:none}
 @keyframes syncBlink{0%,100%{opacity:1}50%{opacity:.45}}
 @media(max-width:900px){.sync-pill b{display:none}.sync-pill{padding:0 9px}}
 
+/* ---- 仪表盘课程提醒 ---- */
+.dash-sched{display:flex;flex-direction:column;gap:12px}
+.dash-sched-day{display:flex;flex-direction:column;gap:6px}
+.dash-sched-h{font-size:12.5px;font-weight:800;color:var(--pink-600);padding-left:2px}
+.dash-sched-i{display:grid;grid-template-columns:66px 14px 1fr 26px;align-items:center;gap:10px;padding:9px 4px;border-radius:12px;transition:background .15s}
+.dash-sched-i.cl{cursor:pointer}
+.dash-sched-i.cl:hover{background:var(--pink-50)}
+.dash-sched-i+.dash-sched-i{border-top:1px dashed var(--line)}
+.dash-sched-t{font-size:11.5px;font-weight:800;color:var(--pink-600);text-align:center;background:var(--pink-50);border-radius:10px;padding:5px 3px;line-height:1.15;white-space:nowrap}
+.dash-sched-line{width:2px;height:100%;min-height:30px;background:linear-gradient(var(--pink-200),var(--violet-200));border-radius:2px;justify-self:center}
+.dash-sched-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dash-sched-body b{font-size:13px;color:var(--ink);font-weight:600;line-height:1.3}
+.dash-sched-body span{font-size:11px;color:var(--muted)}
+.dash-sched-ck{font-size:16px;text-align:center;line-height:1}
+.dash-sched-ck.off{color:var(--muted);opacity:.5}
+.dash-sched-i.done .dash-sched-body b{text-decoration:line-through;color:var(--muted)}
+.dash-sched-i.done .dash-sched-t{opacity:.55}
+.dash-sched-i.done .dash-sched-line{opacity:.4}
+
 </style>
 </head>
 <body>
@@ -717,7 +736,6 @@ function render() {
   }[TAB] || viewDash)();
   v.scrollTop = 0;
   clearInterval(clockTimer);
-  if (TAB === 'dash') { updateClock(); clockTimer = setInterval(updateClock, 1000); }
 }
 function renderTabs() {
   const nav = $('#tabs'); if (!nav) return;
@@ -736,12 +754,6 @@ function toggleSidebar(show) {
   s.classList.toggle('open', open);
   b.classList.toggle('open', open);
 }
-function updateClock() {
-  const el = $('#heroClock'); if (!el) return;
-  const now = new Date();
-  el.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-}
-
 /* ---------- 通用组件 ---------- */
 function taskItem(t) {
   const d = isDone(t);
@@ -831,17 +843,6 @@ function eventList(mod) {
 
 /* ---------- 视图：仪表盘 ---------- */
 function viewDash() {
-  const all = DB.tasks;
-  const todayTasks = all.filter(t => (t.repeat === 'daily' || (t.due && t.due === TODAY())) && dayMatch(t));
-  const doneToday = todayTasks.filter(isDone).length;
-  const p = todayTasks.length ? doneToday / todayTasks.length : 0;
-  const C = 2 * Math.PI * 34;
-  const h = new Date().getHours();
-  const hello = h < 6 ? '夜深了，早点休息呀' : h < 11 ? '早上好，新的一天开始啦' : h < 14 ? '中午好，记得吃饭休息' : h < 18 ? '下午好，继续加油' : '晚上好，今天辛苦啦';
-  const nowStr = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-  const todos = DB.tasks.filter(t => !isDone(t)).length;
-  const xhsDays = DB.xposts.length ? Math.max(1, Math.ceil((Date.now() - new Date(DB.xposts[0].date).getTime()) / 86400000)) : 1;
-
   const kindCards = Object.entries(KINDS).map(([k, v]) => {
     let list = DB.tasks.filter(t => KINDS[k].mods.includes(t.mod)).filter(dayMatch);
     if (k === 'business') {
@@ -870,33 +871,8 @@ function viewDash() {
   const saved = DB.holdings.reduce((s, h) => s + Number(h.value || 0), 0);
 
   return `
-  <div class="hero">
-    <div class="hero-row">
-      <div style="flex:1;min-width:0">
-        <div class="hero-date">${nowStr}</div>
-        <div class="hero-clock" id="heroClock">00:00:00</div>
-        <h2>${hello} ✨</h2>
-        <p>今天也是闪闪发光的 Mandy 呀 🌸</p>
-      </div>
-      <div class="ring">
-        <svg width="82" height="82"><circle cx="41" cy="41" r="34" stroke="rgba(255,255,255,.3)" stroke-width="8" fill="none"/>
-        <circle cx="41" cy="41" r="34" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round"
-          stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C - C * p).toFixed(1)}"/></svg>
-        <div style="text-align:center"><b>${Math.round(p * 100)}%</b><i>今日完成</i></div>
-      </div>
-    </div>
-    <div class="welcome-card">
-      <b>📣 今日元气电波</b>
-      <p>今天也要加油哦！把担心换成期待，把犹豫换成行动。你只管认真发光，剩下的交给时间 🌻✨</p>
-    </div>
-  </div>
-
-  <h2 class="section-title">🌷 欢迎回到工作台 <small>全部待办 ${todos} 项</small></h2>
-  <div class="grid g3">
-    <div class="card"><div class="stat"><b>${todayTasks.length - doneToday}</b><span>今日待办剩余</span></div></div>
-    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${doneToday}</b><span>今日已完成</span></div></div>
-    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${DB.xposts.length}</b><span>小红书笔记数</span></div></div>
-  </div>
+  <h2 class="section-title">🗓 孩子课程提醒 <small>今天 / 明天 · 点今天课程打卡</small></h2>
+  <div class="card">${dashScheduleRemind()}</div>
 
   <h2 class="section-title">🗂 各模块未完成汇总 <small>按任务性质分类</small></h2>
   <div class="grid g3">${kindCards}</div>
@@ -932,6 +908,31 @@ function viewDash() {
       </div>
     </div>
   </div>`;
+}
+
+/* ---------- 仪表盘：孩子课程提醒（今天+明天） ---------- */
+function dashScheduleRemind() {
+  const today = new Date().getDay();
+  const tomorrow = (today + 1) % 7;
+  const byStart = it => { const m = (it.time || '').match(/^(\d{1,2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : 9999; };
+  const label = d => d === today ? '今天' : d === tomorrow ? '明天' : '周' + WK_LABEL[d];
+  const renderDay = (day) => {
+    const items = (DB.schedule || []).filter(it => (it.days || []).includes(day)).sort((a, b) => byStart(a) - byStart(b));
+    if (!items.length) return '';
+    return `<div class="dash-sched-day"><div class="dash-sched-h">${label(day)}</div>
+      ${items.map(it => {
+        const done = day === today && (DB.schedCk || []).includes(schedKey(it));
+        return `<div class="dash-sched-i ${day === today ? 'cl' : ''}" ${day === today ? `data-act="sched" data-id="${it.id}"` : ''}>
+          <span class="dash-sched-t">${esc(it.time)}</span>
+          <span class="dash-sched-line"></span>
+          <div class="dash-sched-body"><b>${esc(it.title)}</b>${it.sub ? `<span>${esc(it.sub)}</span>` : ''}</div>
+          ${day === today ? `<span class="dash-sched-ck">${done ? '✅' : '⬜'}</span>` : '<span class="dash-sched-ck off">—</span>'}
+        </div>`;
+      }).join('')}</div>`;
+  };
+  const html = renderDay(today) + renderDay(tomorrow);
+  if (!html) return emptyBox('今天和明天都没有排课，孩子们可以休息啦 🌈', '🗓');
+  return `<div class="dash-sched">${html}</div>`;
 }
 
 /* ---------- 导入暑假计划（安安教育） ---------- */
