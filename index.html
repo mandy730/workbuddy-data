@@ -261,6 +261,21 @@ table.data tr:last-child td{border-bottom:none}
 .bar-i span{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .bar-i b{font-size:10.5px;font-weight:700;color:var(--pink-600)}
 
+/* ---- 近1个月每日每笔 ---- */
+.day-block{border-top:1px dashed var(--line);padding:10px 0}
+.day-block:first-of-type{border-top:none;padding-top:2px}
+.day-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.day-head b{font-size:13px;font-weight:800;color:var(--ink)}
+.day-sum{font-size:11.5px;color:var(--muted)}
+.day-sum .pos{font-style:normal;font-weight:700}
+.day-sum .neg{font-style:normal;font-weight:700}
+.day-items{display:flex;flex-direction:column;gap:6px;padding-left:2px}
+.day-row{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.day-cat{font-weight:600;color:var(--ink-2)}
+.day-amt{font-weight:800;font-variant-numeric:tabular-nums}
+.day-note{color:var(--muted);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.day-row .pill{flex:none}
+
 /* ---- 进度条 ---- */
 .pbar{height:8px;border-radius:999px;background:var(--pink-100);overflow:hidden}
 .pbar i{display:block;height:100%;background:var(--grad);border-radius:999px;transition:.5s}
@@ -1119,12 +1134,13 @@ function viewMoney() {
   const mIn = list.filter(l => monthKey(l.date) === mk && l.type === 'in').reduce((s, l) => s + Number(l.amount), 0);
   const mOut = list.filter(l => monthKey(l.date) === mk && l.type === 'out').reduce((s, l) => s + Number(l.amount), 0);
 
-  const months = [...new Set(DB.ledger.filter(l => l.book === ledgerBook).map(l => monthKey(l.date)))].sort().slice(-6);
-  const mData = months.map(m => ({
-    m, in: DB.ledger.filter(l => l.book === ledgerBook && monthKey(l.date) === m && l.type === 'in').reduce((s, l) => s + Number(l.amount), 0),
-    out: DB.ledger.filter(l => l.book === ledgerBook && monthKey(l.date) === m && l.type === 'out').reduce((s, l) => s + Number(l.amount), 0)
-  }));
-  const maxM = Math.max(1, ...mData.map(d => Math.max(d.in, d.out)));
+  const today = TODAY();
+  const outLast30 = list.filter(l => l.type === 'out' && daysBetween(l.date, today) >= 0 && daysBetween(l.date, today) <= 30);
+  const catMap = {};
+  outLast30.forEach(l => { const c = l.cat || '其他'; catMap[c] = (catMap[c] || 0) + Number(l.amount); });
+  const catData = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+  const maxCat = Math.max(1, ...catData.map(c => c[1]));
+  const catTotal = outLast30.reduce((s, l) => s + Number(l.amount), 0);
 
   const hCost = DB.holdings.reduce((s, h) => s + Number(h.cost), 0);
   const hVal = DB.holdings.reduce((s, h) => s + Number(h.value), 0);
@@ -1162,15 +1178,15 @@ function viewMoney() {
   </div>
 
   <div class="card" style="margin-top:14px">
-    <div class="card-h"><h3>📊 近 ${mData.length} 个月收支</h3><span class="sub">${LEDGER_BOOKS[ledgerBook]}</span></div>
+    <div class="card-h"><h3>📊 本月支出类目</h3><span class="sub">${LEDGER_BOOKS[ledgerBook]} · 近 30 天</span></div>
+    ${catData.length ? `
     <div class="bars">
-      ${mData.map(d => `<div class="bar-i"><b>${(d.in / 1000).toFixed(1)}k</b>
-        <div style="display:flex;gap:3px;align-items:flex-end;width:100%;justify-content:center">
-          <div class="bar" style="height:${d.in / maxM * 80}px;background:linear-gradient(180deg,#ff9fd0,#f76bb0)"></div>
-          <div class="bar" style="height:${d.out / maxM * 80}px;background:linear-gradient(180deg,#cdb2ff,#8f5aee)"></div>
-        </div><span>${d.m.slice(5)}月</span></div>`).join('') || ''}
+      ${catData.map(([c, amt]) => `<div class="bar-i"><b>${money(amt)}</b>
+        <div class="bar" style="height:${Math.max(6, amt / maxCat * 84)}px;background:linear-gradient(180deg,#ff9fd0,#c48bff)"></div>
+        <span>${esc(c)}</span></div>`).join('')}
     </div>
-    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px">粉色＝收入　紫色＝支出</div>
+    <div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:8px">共 ${catData.length} 类 · 合计支出 <b class="neg">${money(catTotal)}</b></div>
+    ` : emptyBox('近 30 天还没有支出记录', '🧾')}
   </div>
 
   <div class="card" style="margin-top:14px">
@@ -1186,10 +1202,11 @@ function viewMoney() {
         <td><button class="mini" data-act="edit-ledger" data-id="${l.id}">✎</button>
         <button class="mini" data-act="del-ledger" data-id="${l.id}">✕</button></td></tr>`).join('') || `<tr><td colspan="6">${emptyBox('还没有记账记录', '🧾')}</td></tr>`}
     </table></div>
-  </div>`}
+  </div>
 
   <h2 class="section-title">✅ 财务待办</h2>
-  <div class="grid g3">${MOD('money').subs.map(s => taskGroup('money', s)).join('')}</div>`;
+  <div class="grid g3">${MOD('money').subs.map(s => taskGroup('money', s)).join('')}</div>`}
+  `;
 }
 
 /* ---------- 标签筛选 ---------- */
