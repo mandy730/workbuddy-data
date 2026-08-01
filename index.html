@@ -734,15 +734,16 @@ function viewDash() {
   const xhsDays = DB.xposts.length ? Math.max(1, Math.ceil((Date.now() - new Date(DB.xposts[0].date).getTime()) / 86400000)) : 1;
 
   const kindCards = Object.entries(KINDS).map(([k, v]) => {
-    const list = kindOpen(k).filter(dayMatch).sort((a, b) => ['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri));
+    const list = DB.tasks.filter(t => KINDS[k].mods.includes(t.mod)).filter(dayMatch)
+      .sort((a, b) => (isDone(a) - isDone(b)) || (['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri)));
+    const undone = list.filter(t => !isDone(t)).length;
     return `<div class="kind-card">
       <div class="kind-head">
         <div class="kind-ic" style="background:${v.bg}">${v.emoji}</div>
         <div><b>${v.name}</b><span>${v.mods.map(m => MOD(m).name).join(' · ')}</span></div>
-        <div class="kind-num" style="color:${v.color}">${list.length}<small>未完成</small></div>
+        <div class="kind-num" style="color:${v.color}">${undone}<small>未完成</small></div>
       </div>
-      ${list.slice(0, 4).map(taskItem).join('') || emptyBox('全部完成，太棒啦！', '🎉')}
-      ${list.length > 4 ? `<div style="text-align:center;font-size:11.5px;color:var(--muted);margin-top:4px">还有 ${list.length - 4} 项…</div>` : ''}
+      ${list.length ? list.map(taskItem).join('') : emptyBox('还没有安排，去各模块加一条吧')}
     </div>`;
   }).join('');
 
