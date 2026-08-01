@@ -3,42 +3,77 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
-<meta name="theme-color" content="#ff8fc7" />
+<meta name="theme-color" content="#e6a9d8" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="宝妈工作台" />
+<meta name="apple-mobile-web-app-title" content="Mandy工作台" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icon.svg" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
-<title>妈妈的小宇宙 · 综合管理工作台</title>
+<title>Mandy的工作台 · 综合管理工作台</title>
 <style>
-/* ===== 妈妈的小宇宙 · 粉紫少女风主题 ===== */
+/* ===== Mandy的工作台 · 浅粉紫主题 ===== */
 :root{
-  --pink-50:#fff5fa; --pink-100:#ffe9f4; --pink-200:#ffd3e8; --pink-300:#ffb3d8;
-  --pink-400:#ff8fc7; --pink-500:#f76bb0; --pink-600:#e04d97;
-  --violet-100:#f3ebff; --violet-200:#e6d8ff; --violet-300:#cdb2ff;
-  --violet-400:#ab7dfa; --violet-500:#8f5aee; --violet-600:#7440d4;
+  --pink-50:#fef8fc; --pink-100:#fdeef6; --pink-200:#f9dcf0; --pink-300:#f1c4e6;
+  --pink-400:#e6a9d8; --pink-500:#d68fc6; --pink-600:#c272b1; --pink-700:#a85a98;
+  --violet-100:#f5effe; --violet-200:#ece0fd; --violet-300:#d8c2fb;
+  --violet-400:#bf9ef3; --violet-500:#a87ef0; --violet-600:#8e63dd;
   --mint:#7fd8c4; --lemon:#ffd166; --coral:#ff8b7b; --sky:#7cc4f8;
-  --ink:#4b3557; --ink-2:#6c5478; --muted:#a291b0; --line:#f3e3f0;
+  --ink:#574463; --ink-2:#7a6588; --muted:#ab9cb8; --line:#f1e6f1;
   --card:#ffffff; --radius:20px; --radius-sm:14px;
-  --shadow:0 8px 24px rgba(224,77,151,.10), 0 2px 6px rgba(143,90,238,.06);
-  --shadow-lg:0 16px 40px rgba(224,77,151,.16);
-  --grad:linear-gradient(135deg,#ff9fd0 0%,#c48bff 100%);
-  --grad-soft:linear-gradient(135deg,#ffe9f4 0%,#f0e6ff 100%);
+  --shadow:0 8px 24px rgba(190,120,170,.10), 0 2px 6px rgba(143,90,238,.05);
+  --shadow-lg:0 16px 40px rgba(190,120,170,.14);
+  --grad:linear-gradient(135deg,#ffc6e4 0%,#d9c2ff 100%);
+  --grad-soft:linear-gradient(135deg,#fdeef7 0%,#f3ecff 100%);
   --safe-b:env(safe-area-inset-bottom,0px);
+  --sidebar-w:230px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{
   font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,sans-serif;
-  color:var(--ink); background:linear-gradient(180deg,#fff7fc 0%,#fdf3ff 40%,#f6f0ff 100%);
+  color:var(--ink); background:linear-gradient(180deg,#fefafd 0%,#fbf6ff 45%,#f6f1ff 100%);
   min-height:100vh; font-size:15px; line-height:1.6; overflow-x:hidden;
 }
 .bg-deco{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.5}
-.b1{width:340px;height:340px;background:#ffc2e0;top:-90px;left:-70px}
-.b2{width:300px;height:300px;background:#d9c2ff;top:30%;right:-100px}
-.b3{width:280px;height:280px;background:#ffe0b8;bottom:-80px;left:20%}
+.b1{width:340px;height:340px;background:#ffd6ec;top:-90px;left:-70px}
+.b2{width:300px;height:300px;background:#e4d2ff;top:30%;right:-100px}
+.b3{width:280px;height:280px;background:#ffe9cf;bottom:-80px;left:20%}
+
+/* ---- 应用外壳 ---- */
+.app-shell{display:flex;min-height:100vh}
+.app-main{flex:1;margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;position:relative;z-index:1}
+
+/* ---- 左侧边栏 ---- */
+.sidebar{
+  width:var(--sidebar-w);position:fixed;left:0;top:0;bottom:0;z-index:60;
+  background:linear-gradient(180deg,#ffd4ec 0%,#f4bcdf 55%,#dcbff6 100%);
+  color:#fff;display:flex;flex-direction:column;padding:22px 12px 14px;
+  box-shadow:4px 0 24px rgba(190,120,170,.18);
+}
+.sidebar-brand{text-align:center;margin-bottom:26px;padding:0 4px}
+.sidebar-brand .bow{font-size:34px;line-height:1;filter:drop-shadow(0 2px 4px rgba(180,50,110,.25))}
+.sidebar-brand h2{margin:10px 0 0;font-size:16px;font-weight:800;letter-spacing:.5px}
+.sidebar-brand p{margin:3px 0 0;font-size:11px;opacity:.92;font-weight:500}
+.sidebar-nav{flex:1;display:flex;flex-direction:column;gap:7px;overflow-y:auto;scrollbar-width:thin}
+.sidebar-nav::-webkit-scrollbar{width:4px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.35);border-radius:4px}
+.sidebar-item{
+  display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:16px;
+  color:#fff;background:transparent;border:none;font-size:14px;font-weight:700;
+  cursor:pointer;transition:.18s;text-align:left;width:100%;font-family:inherit;
+  position:relative;
+}
+.sidebar-item:hover{background:rgba(255,255,255,.18)}
+.sidebar-item.on{background:#fff;color:var(--pink-600);box-shadow:0 4px 14px rgba(180,50,110,.22)}
+.sidebar-item .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:18px;background:rgba(255,255,255,.22);flex:none;transition:.18s}
+.sidebar-item.on .ic{background:var(--grad);color:#fff;box-shadow:0 4px 10px rgba(247,107,176,.35)}
+.sidebar-item .txt{flex:1;min-width:0}
+.sidebar-item .cnt{margin-left:auto;background:rgba(255,255,255,.28);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:800;flex:none}
+.sidebar-item.on .cnt{background:var(--pink-100);color:var(--pink-600)}
+.sidebar-footer{font-size:11px;text-align:center;opacity:.85;padding-top:10px;line-height:1.5}
+.sidebar-backdrop{position:fixed;inset:0;z-index:55;background:rgba(75,53,87,.35);opacity:0;pointer-events:none;transition:.25s}
 
 /* ---- 顶栏 ---- */
 .topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);
@@ -57,18 +92,13 @@ body{
 .btn-ghost{height:38px;border-radius:13px;border:1px solid var(--pink-200);background:#fff;color:var(--pink-600);
   font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:0 14px;transition:.18s;white-space:nowrap}
 .btn-ghost:hover{background:var(--pink-100);transform:translateY(-1px)}
+.menu-btn{display:none}
 
-.tabs{max-width:1180px;margin:0 auto;padding:0 12px 10px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:none;border:1px solid var(--pink-200);background:#fff;color:var(--ink-2);border-radius:999px;
-  padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:.18s;display:flex;align-items:center;gap:6px;white-space:nowrap}
-.tab .cnt{background:var(--pink-100);color:var(--pink-600);border-radius:999px;padding:0 6px;font-size:11px;font-weight:700}
-.tab:hover{background:var(--pink-50)}
-.tab.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(247,107,176,.35)}
-.tab.on .cnt{background:rgba(255,255,255,.28);color:#fff}
+/* 旧 tabs 保留，仅作兼容/隐藏，实际由 sidebar 替代 */
+.tabs{display:none}
 
 /* ---- 布局 ---- */
-.view{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:16px 16px 40px}
+.view{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:16px 16px 40px;width:100%}
 .footer{position:relative;z-index:1;text-align:center;color:var(--muted);font-size:12px;padding:0 16px calc(24px + var(--safe-b))}
 .grid{display:grid;gap:14px}
 .g2{grid-template-columns:repeat(2,1fr)}
@@ -84,7 +114,7 @@ body{
 .section-title{margin:22px 0 12px;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
 .section-title small{font-size:11px;color:var(--muted);font-weight:500}
 
-/* ---- Hero ---- */
+/* ---- Hero / 欢迎区 ---- */
 .hero{background:var(--grad);border-radius:24px;padding:20px;color:#fff;box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
 .hero::after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.16);right:-60px;top:-70px}
 .hero::before{content:"";position:absolute;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.12);right:60px;bottom:-70px}
@@ -99,6 +129,12 @@ body{
 .hstat{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.32);border-radius:14px;padding:8px 12px;min-width:88px}
 .hstat b{display:block;font-size:18px;font-weight:800;line-height:1.2}
 .hstat span{font-size:11px;opacity:.92}
+
+.hero-date{font-size:13px;opacity:.95;margin-bottom:4px;font-weight:600}
+.hero-clock{font-size:42px;font-weight:800;line-height:1.1;letter-spacing:.5px;margin-bottom:14px;font-variant-numeric:tabular-nums}
+.welcome-card{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.32);border-radius:18px;padding:14px 16px;margin-top:14px;position:relative;z-index:1}
+.welcome-card b{font-size:13px;display:block;margin-bottom:5px}
+.welcome-card p{margin:0;font-size:12.5px;line-height:1.7;opacity:.95}
 
 /* ---- 分类汇总卡 ---- */
 .kind-card{border-radius:var(--radius);padding:14px;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow)}
@@ -262,6 +298,20 @@ table.data tr:last-child td{border-bottom:none}
 .mini-link{font-size:11px;color:var(--violet-500);word-break:break-all;text-decoration:none}
 .hl{background:linear-gradient(transparent 62%,var(--pink-200) 62%);padding:0 2px;font-weight:700}
 
+/* ---- 响应式：移动端抽屉 ---- */
+@media(max-width:900px){
+  .app-main{margin-left:0}
+  .sidebar{transform:translateX(calc(-100% - 20px));transition:transform .28s cubic-bezier(.2,.9,.3,1)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-backdrop.open{opacity:1;pointer-events:auto}
+  .menu-btn{display:grid;position:fixed;left:12px;top:12px;z-index:52}
+  .topbar-inner{padding-left:44px}
+  .brand-text h1{font-size:15px}
+}
+@media(max-width:380px){
+  .sidebar{width:210px;--sidebar-w:210px}
+}
+
 </style>
 </head>
 <body>
@@ -269,34 +319,52 @@ table.data tr:last-child td{border-bottom:none}
   <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
 </div>
 
-<header class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">
-      <div class="brand-logo">🌷</div>
-      <div class="brand-text">
-        <h1>妈妈的小宇宙</h1>
-        <p id="brandSub">安安 · 宁宁 · 外贸 · 小红书</p>
-      </div>
-    </div>
-    <div class="topbar-actions">
-      <button class="icon-btn" id="btnQuickAdd" title="快速新建">＋</button>
-      <button class="btn-ghost" id="btnSettings" title="数据与手机同步">⚙ 设置</button>
-    </div>
+<button class="icon-btn menu-btn" data-act="menu" title="打开菜单">☰</button>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="bow">🎀</div>
+    <h2>Mandy的</h2>
+    <p>工作台</p>
   </div>
-  <nav class="tabs" id="tabs"></nav>
-</header>
+  <nav class="sidebar-nav" id="tabs"></nav>
+  <div class="sidebar-footer">
+    c.oo<br>miao~
+  </div>
+</aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" data-act="backdrop"></div>
 
-<main id="view" class="view"></main>
+<div class="app-shell">
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-logo">🌷</div>
+          <div class="brand-text">
+            <h1>Mandy的工作台</h1>
+            <p id="brandSub">安安 · 宁宁 · 外贸 · 小红书</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="btnQuickAdd" title="快速新建">＋</button>
+          <button class="btn-ghost" id="btnSettings" title="数据与手机同步">⚙ 设置</button>
+        </div>
+      </div>
+    </header>
 
-<footer class="footer">
-  <span>🌸 数据保存在本机浏览器，可在「设置」里开启云同步 / 导出备份</span>
-</footer>
+    <main id="view" class="view"></main>
+
+    <footer class="footer">
+      <span>🌸 数据保存在本机浏览器，可在「设置」里开启云同步 / 导出备份</span>
+    </footer>
+  </div>
+</div>
 
 <div class="modal-root" id="modalRoot" hidden></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
-/* ================= 妈妈的小宇宙 · 综合管理工作台 ================= */
+/* ================= Mandy的工作台 · 综合管理工作台 ================= */
 'use strict';
 
 /* ---------- 工具 ---------- */
@@ -507,6 +575,7 @@ let weekStart = startOfWeek(new Date());
 let filterTag = '';
 let ledgerBook = 'home';
 
+let clockTimer = null;
 /* ---------- 渲染入口 ---------- */
 function render() {
   renderTabs();
@@ -516,13 +585,30 @@ function render() {
     xhs: viewXhs, life: viewLife, money: viewMoney
   }[TAB] || viewDash)();
   v.scrollTop = 0;
+  clearInterval(clockTimer);
+  if (TAB === 'dash') { updateClock(); clockTimer = setInterval(updateClock, 1000); }
 }
 function renderTabs() {
-  $('#tabs').innerHTML = MODULES.map(m => {
+  const nav = $('#tabs'); if (!nav) return;
+  nav.innerHTML = MODULES.map(m => {
     const n = m.id === 'dash' ? DB.tasks.filter(t => !isDone(t)).length : openTasks(m.id).length;
-    return `<button class="tab ${TAB === m.id ? 'on' : ''}" data-act="tab" data-id="${m.id}">
-      <span>${m.emoji}</span>${esc(m.name)}${n ? `<span class="cnt">${n}</span>` : ''}</button>`;
+    return `<button class="sidebar-item ${TAB === m.id ? 'on' : ''}" data-act="tab" data-id="${m.id}">
+      <span class="ic">${m.emoji}</span>
+      <span class="txt">${esc(m.name)}</span>
+      ${n ? `<span class="cnt">${n}</span>` : ''}
+    </button>`;
   }).join('');
+}
+function toggleSidebar(show) {
+  const s = $('#sidebar'), b = $('#sidebarBackdrop');
+  const open = show == null ? !s.classList.contains('open') : show;
+  s.classList.toggle('open', open);
+  b.classList.toggle('open', open);
+}
+function updateClock() {
+  const el = $('#heroClock'); if (!el) return;
+  const now = new Date();
+  el.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
 /* ---------- 通用组件 ---------- */
@@ -621,6 +707,9 @@ function viewDash() {
   const C = 2 * Math.PI * 34;
   const h = new Date().getHours();
   const hello = h < 6 ? '夜深了，早点休息呀' : h < 11 ? '早上好，新的一天开始啦' : h < 14 ? '中午好，记得吃饭休息' : h < 18 ? '下午好，继续加油' : '晚上好，今天辛苦啦';
+  const nowStr = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+  const todos = DB.tasks.filter(t => !isDone(t)).length;
+  const xhsDays = DB.xposts.length ? Math.max(1, Math.ceil((Date.now() - new Date(DB.xposts[0].date).getTime()) / 86400000)) : 1;
 
   const kindCards = Object.entries(KINDS).map(([k, v]) => {
     const list = kindOpen(k).sort((a, b) => ['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri));
@@ -642,13 +731,16 @@ function viewDash() {
   const mk = TODAY().slice(0, 7);
   const mIn = DB.ledger.filter(l => monthKey(l.date) === mk && l.type === 'in').reduce((s, l) => s + Number(l.amount), 0);
   const mOut = DB.ledger.filter(l => monthKey(l.date) === mk && l.type === 'out').reduce((s, l) => s + Number(l.amount), 0);
-  const todos = DB.tasks.filter(t => !isDone(t)).length;
+  const saved = DB.holdings.reduce((s, h) => s + Number(h.value || 0), 0);
 
   return `
   <div class="hero">
     <div class="hero-row">
-      <div><h2>${hello} ✨</h2>
-        <p>${new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })} · 全部待办 ${todos} 项</p>
+      <div style="flex:1;min-width:0">
+        <div class="hero-date">${nowStr}</div>
+        <div class="hero-clock" id="heroClock">00:00:00</div>
+        <h2>${hello} ✨</h2>
+        <p>今天也是闪闪发光的 Mandy 呀 🌸</p>
       </div>
       <div class="ring">
         <svg width="82" height="82"><circle cx="41" cy="41" r="34" stroke="rgba(255,255,255,.3)" stroke-width="8" fill="none"/>
@@ -657,12 +749,18 @@ function viewDash() {
         <div style="text-align:center"><b>${Math.round(p * 100)}%</b><i>今日完成</i></div>
       </div>
     </div>
-    <div class="hero-stats">
-      <div class="hstat"><b>${doneToday}/${todayTasks.length}</b><span>今日打卡任务</span></div>
-      <div class="hstat"><b>${kindOpen('parenting').length}</b><span>育儿待办</span></div>
-      <div class="hstat"><b>${kindOpen('business').length}</b><span>商业待办</span></div>
-      <div class="hstat"><b>${soonEv.length}</b><span>近期赛事</span></div>
+    <div class="welcome-card">
+      <b>📣 今日元气电波</b>
+      <p>今天也要加油哦！把担心换成期待，把犹豫换成行动。你只管认真发光，剩下的交给时间 🌻✨</p>
     </div>
+  </div>
+
+  <h2 class="section-title">🌷 欢迎回到工作台 <small>全部待办 ${todos} 项</small></h2>
+  <div class="grid g4">
+    <div class="card"><div class="stat"><b>${doneToday}/${todayTasks.length}</b><span>今日待办剩余</span></div></div>
+    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${DB.xposts.length}</b><span>今日番茄数</span></div></div>
+    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${xhsDays}</b><span>自媒体坚持天数</span></div></div>
+    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${money(saved)}</b><span>罐罐里已存</span></div></div>
   </div>
 
   <h2 class="section-title">🗂 各模块未完成汇总 <small>按任务性质分类</small></h2>
@@ -1408,7 +1506,9 @@ document.addEventListener('click', e => {
   if (a.closest('.modal')) return;
   const { act, id, mod, sub, sid, d } = a.dataset;
   switch (act) {
-    case 'tab': TAB = id; filterTag = ''; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'tab': TAB = id; filterTag = ''; toggleSidebar(false); render(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'menu': toggleSidebar(); break;
+    case 'backdrop': toggleSidebar(false); break;
     case 'tg': toggleTask(id); break;
     case 'edit-task': taskForm(DB.tasks.find(t => t.id === id)); break;
     case 'del-task': if (confirm('删除这条待办？')) { DB.tasks = DB.tasks.filter(t => t.id !== id); save(); render(); } break;
