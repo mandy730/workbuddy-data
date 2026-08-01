@@ -490,6 +490,14 @@ function seed() {
       { id: uid(), mod: 'anan', title: '英语风采大赛报名截止', date: ymd(addDays(new Date(), 5)), type: '报名', note: '需要 1 分钟自我介绍视频' },
       { id: uid(), mod: 'anan', title: '数独等级赛（初级组）', date: ymd(addDays(new Date(), 73)), type: '比赛', note: '' }
     ],
+    schedule: [
+      { id: uid(), days: [1, 5], time: '18:30-20:00', title: '乒乓球', sub: '体育' },
+      { id: uid(), days: [0], time: '9:00-12:00', title: '英语课', sub: '英语' },
+      { id: uid(), days: [3, 0], time: '18:30-20:30', title: '数独课', sub: '数独' },
+      { id: uid(), days: [2], time: '14:30-16:00', title: '舞蹈课', sub: '中国舞' },
+      { id: uid(), days: [6], time: '18:30-20:00', title: '舞蹈课', sub: '中国舞' }
+    ],
+    schedCk: [],
     xnotes: [
       { id: uid(), title: '“预算 3000 也能拍出高级感”对比图爆款', author: '@小城婚纱日记', link: '', likes: 12800, points: '封面用左右对比图；文案强调预算痛点；评论区置顶到店福利', tags: ['对比图', '价格锚点'] },
       { id: uid(), title: '新娘避坑指南 · 拍摄前必问的 8 个问题', author: '@婚礼筹备笔记', link: '', likes: 8600, points: '干货清单体，收藏率高；结尾引导私信领取清单', tags: ['干货', '引流私信'] },
@@ -860,26 +868,35 @@ function importSummerPlan() {
   save(); render(); toast('📥 暑假计划已导入，开始打卡吧！');
 }
 
-/* ---------- 安安日程：今日时间线（按星期几精确）+ 时间排序 ---------- */
+/* ---------- 安安日程：今日固定课表（按星期几） + 时间排序 + 按天打卡 ---------- */
+function schedKey(it) { return ymd(new Date()) + '|' + it.id; }
 function ananSchedule() {
-  const items = DB.tasks.filter(t => t.mod === 'anan' && dayMatch(t)).map(t => {
-    const m = (t.title || '').match(/^(\d{1,2}):(\d{2})(?:-(\d{1,2}):(\d{2}))?/);
+  const today = new Date().getDay();
+  const items = (DB.schedule || []).filter(it => (it.days || []).includes(today)).map(it => {
+    const m = (it.time || '').match(/^(\d{1,2}):(\d{2})/);
     const start = m ? (+m[1]) * 60 + (+m[2]) : 9999;
-    const range = m ? m[0] : '';
-    const title = (t.title || '').replace(/^\d{1,2}:\d{2}(?:-\d{1,2}:\d{2})?\s*/, '');
-    return { t, start, range, title };
+    return { it, start };
   }).sort((a, b) => a.start - b.start);
   if (!items.length) return emptyBox('今天没有排课，出去玩吧 🌈', '🗓');
-  return `<div class="sched">${items.map(({ t, range, title }) => `
-    <div class="sched-i ${isDone(t) ? 'done' : ''}" data-act="tg" data-id="${t.id}">
-      <span class="sched-t">${range || '随时'}</span>
+  return `<div class="sched">${items.map(({ it }) => {
+    const done = (DB.schedCk || []).includes(schedKey(it));
+    return `<div class="sched-i ${done ? 'done' : ''}" data-act="sched" data-id="${it.id}">
+      <span class="sched-t">${esc(it.time)}</span>
       <span class="sched-line"></span>
       <div class="sched-body">
-        <b>${esc(title)}</b>
-        <span class="sched-sub">${esc(t.sub)} · ${PRI[t.pri] ? PRI[t.pri].t : ''}</span>
+        <b>${esc(it.title)}</b>
+        <span class="sched-sub">${esc(it.sub || '')}</span>
       </div>
-      <span class="sched-ck">${isDone(t) ? '✅' : '⬜'}</span>
-    </div>`).join('')}</div>`;
+      <span class="sched-ck">${done ? '✅' : '⬜'}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+function toggleSched(id) {
+  DB.schedCk = DB.schedCk || [];
+  const k = schedKey({ id });
+  const i = DB.schedCk.indexOf(k);
+  if (i >= 0) DB.schedCk.splice(i, 1); else DB.schedCk.push(k);
+  save(); render();
 }
 
 /* ---------- 视图：安安 ---------- */
@@ -1583,6 +1600,7 @@ document.addEventListener('click', e => {
     case 'wk': weekStart = addDays(weekStart, Number(d) * 7); render(); break;
     case 'add-subject': subjectForm(mod); break;
     case 'import-plan': importSummerPlan(); break;
+    case 'sched': toggleSched(id); break;
     case 'add-ev': eventForm(null, mod); break;
     case 'edit-ev': eventForm(DB.events.find(x => x.id === id)); break;
     case 'del-ev': if (confirm('删除该提醒？')) { DB.events = DB.events.filter(x => x.id !== id); save(); render(); } break;
