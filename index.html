@@ -114,6 +114,21 @@ body{
 .section-title{margin:22px 0 12px;font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
 .section-title small{font-size:11px;color:var(--muted);font-weight:500}
 
+/* ---- 安安日程时间线 ---- */
+.sched{display:flex;flex-direction:column;padding:4px 2px}
+.sched-i{display:grid;grid-template-columns:66px 14px 1fr 26px;align-items:center;gap:10px;padding:11px 4px;cursor:pointer;transition:background .15s}
+.sched-i:hover{background:var(--pink-50)}
+.sched-i+.sched-i{border-top:1px dashed var(--line)}
+.sched-t{font-size:11.5px;font-weight:800;color:var(--pink-600);text-align:center;background:var(--pink-50);border-radius:10px;padding:5px 3px;line-height:1.15;white-space:nowrap}
+.sched-line{width:2px;height:100%;min-height:34px;background:linear-gradient(var(--pink-200),var(--violet-200));border-radius:2px;justify-self:center}
+.sched-body{display:flex;flex-direction:column;gap:3px;min-width:0}
+.sched-body b{font-size:13.5px;color:var(--ink);font-weight:600;line-height:1.3}
+.sched-sub{font-size:11px;color:var(--muted)}
+.sched-ck{font-size:16px;text-align:center;line-height:1}
+.sched-i.done .sched-body b{text-decoration:line-through;color:var(--muted)}
+.sched-i.done .sched-t{opacity:.55}
+.sched-i.done .sched-line{opacity:.4}
+
 /* ---- Hero / 欢迎区 ---- */
 .hero{background:var(--grad);border-radius:24px;padding:20px;color:#fff;box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
 .hero::after{content:"";position:absolute;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.16);right:-60px;top:-70px}
@@ -385,7 +400,7 @@ const WD = ['一', '二', '三', '四', '五', '六', '日'];
 /* ---------- 常量 ---------- */
 const MODULES = [
   { id: 'dash', name: '首页仪表盘', emoji: '🏠' },
-  { id: 'anan', name: '安安教育', emoji: '🌸', kind: 'parenting', desc: '7岁 · 二年级', subs: ['语文', '数学', '英语', '数独', '中国舞', '乒乓球'] },
+  { id: 'anan', name: '安安教育', emoji: '🌸', kind: 'parenting', desc: '7岁 · 二年级', subs: ['数学', '语文', '英语', '数独', '中国舞'] },
   { id: 'ning', name: '宁宁教育', emoji: '🍼', kind: 'parenting', desc: '4岁 · 英语启蒙', subs: ['英语启蒙', '亲子早教'] },
   { id: 'trade', name: '外贸工作', emoji: '💼', kind: 'business', desc: 'DARKO · 日常 · AI', subs: ['DARKO工作', '日常工作待办', 'AI工具学习'] },
   { id: 'xhs', name: '小红书', emoji: '📕', kind: 'business', desc: '婚纱摄影引流', subs: ['爆款笔记', '选题策划', '数据统计'] },
@@ -427,7 +442,6 @@ function seed() {
       { id: 'a-yy', mod: 'anan', name: '英语', emoji: '🔤', goal: 5 },
       { id: 'a-sd', mod: 'anan', name: '数独', emoji: '🧩', goal: 5 },
       { id: 'a-wd', mod: 'anan', name: '中国舞', emoji: '💃', goal: 3 },
-      { id: 'a-pp', mod: 'anan', name: '乒乓球', emoji: '🏓', goal: 3 },
       { id: 'n-en', mod: 'ning', name: '英语启蒙动画', emoji: '📺', goal: 7 },
       { id: 'n-bk', mod: 'ning', name: '亲子英文绘本', emoji: '📚', goal: 5 },
       { id: 'n-sg', mod: 'ning', name: '儿歌律动', emoji: '🎵', goal: 4 },
@@ -446,8 +460,6 @@ function seed() {
       t('anan', '数独', '9 宫格挑战 + 计时', 'low', 'weekly', { tags: ['备赛'] }),
       t('anan', '中国舞', '基本功：竖叉横叉下腰', 'mid', 'weekly', { note: '每周 3 次，考级组合每次过一遍' }),
       t('anan', '中国舞', '考级曲目完整复习', 'high', 'weekly', { tags: ['考级'] }),
-      t('anan', '乒乓球', '训练课（周三 / 周六）', 'mid', 'weekly'),
-      t('anan', '乒乓球', '在家颠球 200 个', 'low', 'daily'),
       t('ning', '英语启蒙', '磨耳朵动画 10 分钟', 'high', 'daily', { note: '超级简单儿歌 / Peppa Pig' }),
       t('ning', '英语启蒙', '亲子英文绘本共读 1 本', 'high', 'daily', { tags: ['亲子'] }),
       t('ning', '英语启蒙', '儿歌律动跟跳', 'mid', 'weekly'),
@@ -558,6 +570,8 @@ function toggleTask(id) {
 }
 const openTasks = mod => DB.tasks.filter(t => (!mod || t.mod === mod) && !isDone(t));
 const kindOpen = kind => DB.tasks.filter(t => KINDS[kind].mods.includes(t.mod) && !isDone(t));
+// 按星期几命中：无 days 字段=每天；有 days=只在指定星期几出现（0=周日…6=周六）
+const dayMatch = t => !t.days || t.days.includes(new Date().getDay());
 
 /* ---------- 打卡 ---------- */
 function ck(sid) { return DB.checkins[sid] || (DB.checkins[sid] = []); }
@@ -640,7 +654,7 @@ function taskItem(t) {
   </div>`;
 }
 function taskGroup(mod, sub) {
-  const list = DB.tasks.filter(t => t.mod === mod && t.sub === sub && (!filterTag || (t.tags || []).includes(filterTag)));
+  const list = DB.tasks.filter(t => t.mod === mod && t.sub === sub && (!filterTag || (t.tags || []).includes(filterTag)) && dayMatch(t));
   list.sort((a, b) => (isDone(a) - isDone(b)) || (['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri)));
   const undone = list.filter(t => !isDone(t)).length;
   return `<div class="card">
@@ -701,7 +715,7 @@ function eventList(mod) {
 /* ---------- 视图：仪表盘 ---------- */
 function viewDash() {
   const all = DB.tasks;
-  const todayTasks = all.filter(t => t.repeat === 'daily' || (t.due && t.due === TODAY()));
+  const todayTasks = all.filter(t => (t.repeat === 'daily' || (t.due && t.due === TODAY())) && dayMatch(t));
   const doneToday = todayTasks.filter(isDone).length;
   const p = todayTasks.length ? doneToday / todayTasks.length : 0;
   const C = 2 * Math.PI * 34;
@@ -712,7 +726,7 @@ function viewDash() {
   const xhsDays = DB.xposts.length ? Math.max(1, Math.ceil((Date.now() - new Date(DB.xposts[0].date).getTime()) / 86400000)) : 1;
 
   const kindCards = Object.entries(KINDS).map(([k, v]) => {
-    const list = kindOpen(k).sort((a, b) => ['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri));
+    const list = kindOpen(k).filter(dayMatch).sort((a, b) => ['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri));
     return `<div class="kind-card">
       <div class="kind-head">
         <div class="kind-ic" style="background:${v.bg}">${v.emoji}</div>
@@ -815,24 +829,76 @@ function viewDash() {
   </div>`;
 }
 
+/* ---------- 导入暑假计划（安安教育） ---------- */
+function importSummerPlan() {
+  if (!confirm('将用「一升二暑假计划」覆盖安安教育现有的科目与任务（其他模块不受影响），确定导入？')) return;
+  // 科目：数学 / 语文 / 英语 / 数独 / 中国舞
+  DB.subjects = DB.subjects.filter(s => s.mod !== 'anan').concat([
+    { id: 'a-sx', mod: 'anan', name: '数学', emoji: '🔢', goal: 6 },
+    { id: 'a-yw', mod: 'anan', name: '语文', emoji: '📖', goal: 6 },
+    { id: 'a-yy', mod: 'anan', name: '英语', emoji: '🔤', goal: 6 },
+    { id: 'a-sd', mod: 'anan', name: '数独', emoji: '🧩', goal: 5 },
+    { id: 'a-wd', mod: 'anan', name: '中国舞', emoji: '💃', goal: 3 },
+  ]);
+  // 清空安安原有任务后写入计划
+  DB.tasks = DB.tasks.filter(t => t.mod !== 'anan');
+  const D = [1, 2, 3, 4, 5, 6], ALL = [0, 1, 2, 3, 4, 5, 6];
+  const mk = (sub, title, days) => ({ id: uid(), mod: 'anan', sub, title, pri: 'high', repeat: 'daily', days: days || null, tags: [], note: '', doneKeys: [], created: TODAY() });
+  DB.tasks.push(
+    mk('数学', '8:30-9:00 二年级数学预习（天天练同步+必刷题）', D),
+    mk('数学', '9:30-10:30 奥数学习（天天练+华数）', D),
+    mk('语文', '15:00-15:40 汪勋网课', ALL),
+    mk('语文', '16:00-16:40 看图写话+写字', ALL),
+    mk('语文', '中文阅读 + 运动', [1, 2, 4, 5, 6]),
+    mk('英语', '7:30-8:30 英语听读', ALL),
+    mk('英语', '9:00-12:00 贝乐', [0]),
+    mk('英语', '英文阅读', [1, 2, 4, 5, 6]),
+    mk('数独', '18:30-20:30 数独课', [3, 0]),
+    mk('数独', '10:50-11:20 数独', [0]),
+    mk('中国舞', '14:30-16:00 舞蹈课', [2]),
+  );
+  save(); render(); toast('📥 暑假计划已导入，开始打卡吧！');
+}
+
+/* ---------- 安安日程：今日时间线（按星期几精确）+ 时间排序 ---------- */
+function ananSchedule() {
+  const items = DB.tasks.filter(t => t.mod === 'anan' && dayMatch(t)).map(t => {
+    const m = (t.title || '').match(/^(\d{1,2}):(\d{2})(?:-(\d{1,2}):(\d{2}))?/);
+    const start = m ? (+m[1]) * 60 + (+m[2]) : 9999;
+    const range = m ? m[0] : '';
+    const title = (t.title || '').replace(/^\d{1,2}:\d{2}(?:-\d{1,2}:\d{2})?\s*/, '');
+    return { t, start, range, title };
+  }).sort((a, b) => a.start - b.start);
+  if (!items.length) return emptyBox('今天没有排课，出去玩吧 🌈', '🗓');
+  return `<div class="sched">${items.map(({ t, range, title }) => `
+    <div class="sched-i ${isDone(t) ? 'done' : ''}" data-act="tg" data-id="${t.id}">
+      <span class="sched-t">${range || '随时'}</span>
+      <span class="sched-line"></span>
+      <div class="sched-body">
+        <b>${esc(title)}</b>
+        <span class="sched-sub">${esc(t.sub)} · ${PRI[t.pri] ? PRI[t.pri].t : ''}</span>
+      </div>
+      <span class="sched-ck">${isDone(t) ? '✅' : '⬜'}</span>
+    </div>`).join('')}</div>`;
+}
+
 /* ---------- 视图：安安 ---------- */
 function viewAnan() {
   return `
-  <div class="card">
-    <div class="card-h"><h3>🌸 安安 · 周度学习打卡 <span class="sub">7岁 / 二年级</span></h3>${weekNav()}</div>
-    ${checkinTable('anan')}
-    <button class="add-line" style="margin-top:10px" data-act="add-subject" data-mod="anan">＋ 新增打卡科目</button>
-  </div>
+  <button class="add-line" data-act="import-plan" style="margin-bottom:12px">📥 一键导入暑假计划表（按星期几精确打卡，覆盖安安现有科目与任务）</button>
+
+  <h2 class="section-title">📚 学科任务 <small>按学科分类 · 可设优先级、重复周期、标签备注</small></h2>
+  ${tagChips('anan')}
+  <div class="grid g2">${MOD('anan').subs.map(s => taskGroup('anan', s)).join('')}</div>
+
+  <h2 class="section-title">🗓 安安日程 <small>今日时间计划 · 点一下打卡</small></h2>
+  <div class="card">${ananSchedule()}</div>
 
   <h2 class="section-title">🏆 赛事 / 考级提醒 <small>自动倒计时</small></h2>
   <div class="card">
     ${eventList('anan')}
     <button class="add-line" style="margin-top:8px" data-act="add-ev" data-mod="anan">＋ 添加赛事 / 考级</button>
-  </div>
-
-  <h2 class="section-title">📚 学科与兴趣子任务 <small>可设优先级、重复周期、标签备注</small></h2>
-  ${tagChips('anan')}
-  <div class="grid g2">${MOD('anan').subs.map(s => taskGroup('anan', s)).join('')}</div>`;
+  </div>`;
 }
 
 /* ---------- 视图：宁宁 ---------- */
@@ -1516,6 +1582,7 @@ document.addEventListener('click', e => {
     case 'ck': toggleCk(sid, d); break;
     case 'wk': weekStart = addDays(weekStart, Number(d) * 7); render(); break;
     case 'add-subject': subjectForm(mod); break;
+    case 'import-plan': importSummerPlan(); break;
     case 'add-ev': eventForm(null, mod); break;
     case 'edit-ev': eventForm(DB.events.find(x => x.id === id)); break;
     case 'del-ev': if (confirm('删除该提醒？')) { DB.events = DB.events.filter(x => x.id !== id); save(); render(); } break;
