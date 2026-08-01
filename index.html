@@ -753,8 +753,12 @@ function viewDash() {
   const xhsDays = DB.xposts.length ? Math.max(1, Math.ceil((Date.now() - new Date(DB.xposts[0].date).getTime()) / 86400000)) : 1;
 
   const kindCards = Object.entries(KINDS).map(([k, v]) => {
-    const list = DB.tasks.filter(t => KINDS[k].mods.includes(t.mod)).filter(dayMatch)
-      .sort((a, b) => (isDone(a) - isDone(b)) || (['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri)));
+    let list = DB.tasks.filter(t => KINDS[k].mods.includes(t.mod)).filter(dayMatch);
+    if (k === 'business') {
+      const followUps = DB.tasks.filter(t => KINDS[k].mods.includes(t.mod) && t.follow && !isDone(t) && daysBetween(TODAY(), t.follow) <= 7);
+      list = [...new Map([...list, ...followUps].map(t => [t.id, t])).values()];
+    }
+    list = list.sort((a, b) => (isDone(a) - isDone(b)) || (['high', 'mid', 'low'].indexOf(a.pri) - ['high', 'mid', 'low'].indexOf(b.pri)));
     const undone = list.filter(t => !isDone(t)).length;
     return `<div class="kind-card">
       <div class="kind-head">
@@ -798,44 +802,27 @@ function viewDash() {
   </div>
 
   <h2 class="section-title">🌷 欢迎回到工作台 <small>全部待办 ${todos} 项</small></h2>
-  <div class="grid g4">
-    <div class="card"><div class="stat"><b>${doneToday}/${todayTasks.length}</b><span>今日待办剩余</span></div></div>
-    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${DB.xposts.length}</b><span>今日番茄数</span></div></div>
-    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${xhsDays}</b><span>自媒体坚持天数</span></div></div>
-    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${money(saved)}</b><span>罐罐里已存</span></div></div>
+  <div class="grid g3">
+    <div class="card"><div class="stat"><b>${todayTasks.length - doneToday}</b><span>今日待办剩余</span></div></div>
+    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${doneToday}</b><span>今日已完成</span></div></div>
+    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${DB.xposts.length}</b><span>小红书笔记数</span></div></div>
   </div>
 
   <h2 class="section-title">🗂 各模块未完成汇总 <small>按任务性质分类</small></h2>
   <div class="grid g3">${kindCards}</div>
 
-  <div class="grid g2" style="margin-top:14px">
-    <div class="card">
-      <div class="card-h"><h3>🏆 赛事 / 考级提醒</h3><button class="btn btn-g btn-sm" data-act="add-ev">＋ 添加</button></div>
-      ${soonEv.length ? soonEv.map(e => {
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>🏆 赛事 / 考级提醒</h3><button class="btn btn-g btn-sm" data-act="add-ev">＋ 添加</button></div>
+    ${soonEv.length ? soonEv.map(e => {
     const dd = daysBetween(TODAY(), e.date);
     return `<div class="ev"><div class="ev-d"><b>${e.date.slice(8)}</b><span>${e.date.slice(5, 7)}月</span></div>
       <div class="ev-b"><b>${esc(e.title)}</b><div class="t-meta"><span class="pill p-tag">${esc(e.type)}</span>
       <span class="pill p-sub">${MOD(e.mod).name}</span></div></div>
       <span class="ev-cd ${dd <= 7 ? 'soon' : ''}">${dd === 0 ? '今天' : '还有 ' + dd + ' 天'}</span></div>`;
   }).join('') : emptyBox('近 60 天没有赛事安排', '🏆')}
-    </div>
-    <div class="card">
-      <div class="card-h"><h3>📞 客户跟进提醒</h3><span class="sub">7 天内</span></div>
-      ${follows.length ? follows.map(taskItem).join('') : emptyBox('暂无临期客户跟进', '📞')}
-    </div>
   </div>
 
-  <div class="grid g3" style="margin-top:14px">
-    <div class="card">
-      <div class="card-h"><h3>📅 今日打卡速览</h3></div>
-      ${DB.subjects.filter(s => s.mod === 'anan' || s.mod === 'ning').map(s => {
-    const on = ck(s.id).includes(TODAY());
-    return `<div class="task"><div class="chk ${on ? 'on' : ''}" data-act="ck" data-sid="${s.id}" data-d="${TODAY()}">${on ? '✓' : ''}</div>
-      <div class="t-body"><div class="t-title">${s.emoji} ${esc(s.name)}</div>
-      <div class="t-meta"><span class="pill p-sub">${MOD(s.mod).name}</span>
-      <span class="pill p-rep">本周 ${ckWeekCount(s.id, startOfWeek(new Date()))}/${s.goal}</span></div></div></div>`;
-  }).join('')}
-    </div>
+  <div class="grid g2" style="margin-top:14px">
     <div class="card">
       <div class="card-h"><h3>💰 本月财务</h3><span class="sub">${mk}</span></div>
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
