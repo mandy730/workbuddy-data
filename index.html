@@ -590,7 +590,7 @@ function seed() {
  * 所以只改 seed 的新任务永远不会出现在已有设备上。迁移在这里强制生效。 */
 const MIGRATIONS = [
   {
-    id: 'anan-daily-2026-08',
+    id: 'anan-daily-2026-08-v2',
     run(db) {
       const SUBS = ['数学', '语文', '英语', '数独'];
       db.tasks = (db.tasks || []).filter(t => !(t.mod === 'anan' && SUBS.includes(t.sub)));
