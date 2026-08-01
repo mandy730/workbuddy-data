@@ -452,10 +452,10 @@ function seed() {
   return {
     meta: { v: 1, updatedAt: Date.now(), owner: '妈妈' },
     subjects: [
-      { id: 'a-yw', mod: 'anan', name: '语文', emoji: '📖', goal: 6 },
-      { id: 'a-sx', mod: 'anan', name: '数学', emoji: '🔢', goal: 6 },
-      { id: 'a-yy', mod: 'anan', name: '英语', emoji: '🔤', goal: 5 },
-      { id: 'a-sd', mod: 'anan', name: '数独', emoji: '🧩', goal: 5 },
+      { id: 'a-yw', mod: 'anan', name: '语文', emoji: '📖', goal: 4 },
+      { id: 'a-sx', mod: 'anan', name: '数学', emoji: '🔢', goal: 4 },
+      { id: 'a-yy', mod: 'anan', name: '英语', emoji: '🔤', goal: 4 },
+      { id: 'a-sd', mod: 'anan', name: '数独', emoji: '🧩', goal: 2 },
       { id: 'a-wd', mod: 'anan', name: '中国舞', emoji: '💃', goal: 3 },
       { id: 'n-en', mod: 'ning', name: '英语启蒙动画', emoji: '📺', goal: 7 },
       { id: 'n-bk', mod: 'ning', name: '亲子英文绘本', emoji: '📚', goal: 5 },
@@ -464,15 +464,25 @@ function seed() {
       { id: 'l-rd', mod: 'life', name: '每日阅读', emoji: '📕', goal: 5 }
     ],
     tasks: [
-      t('anan', '语文', '朗读课文 + 背诵古诗 20 分钟', 'high', 'daily'),
-      t('anan', '语文', '生字听写 + 错字订正', 'mid', 'weekly'),
-      t('anan', '语文', '摘抄好词好句 5 条', 'low', 'weekly', { tags: ['积累本'] }),
-      t('anan', '数学', '口算练习 100 题（限时 5 分钟）', 'high', 'daily'),
-      t('anan', '数学', '周末错题本复盘', 'mid', 'weekly', { note: '重点：进位加减、应用题理解' }),
-      t('anan', '英语', '单词打卡 + 跟读 15 分钟', 'high', 'daily'),
-      t('anan', '英语', '英文绘本精读 1 本', 'mid', 'weekly'),
-      t('anan', '数独', '6 宫格 1 题', 'mid', 'daily'),
-      t('anan', '数独', '9 宫格挑战 + 计时', 'low', 'weekly', { tags: ['备赛'] }),
+      // 安安 · 数学
+      t('anan', '数学', '100以内加减法', 'high', 'daily', { due: '2026-08-31' }),
+      t('anan', '数学', '乘法口算', 'high', 'daily', { due: '2026-08-31' }),
+      t('anan', '数学', '二年级数学预习（天天练+必刷题）', 'high', 'daily', { due: '2026-08-31' }),
+      t('anan', '数学', '奥数（天天练+华杯2页）', 'mid', 'daily', { due: '2026-08-31' }),
+      // 安安 · 语文
+      t('anan', '语文', '阅读', 'high', 'daily', { due: '2026-08-31' }),
+      t('anan', '语文', '看图写话', 'mid', 'daily', { due: '2026-08-31', tags: ['积累本'] }),
+      t('anan', '语文', '汪勋网课', 'mid', 'daily', { due: '2026-08-31' }),
+      t('anan', '语文', '写字', 'mid', 'daily', { due: '2026-08-31' }),
+      // 安安 · 英语
+      t('anan', '英语', '磨耳朵40分钟', 'high', 'daily', { due: '2026-08-31' }),
+      t('anan', '英语', '背单词', 'high', 'weekly', { due: '2026-08-31' }),
+      t('anan', '英语', '英文绘本精读 1 本', 'mid', 'weekly', { due: '2026-08-31' }),
+      t('anan', '英语', '桥梁书30分钟', 'mid', 'daily', { due: '2026-08-31' }),
+      // 安安 · 数独
+      t('anan', '数独', '数独作业', 'mid', 'daily', { due: '2026-08-31' }),
+      t('anan', '数独', 'pad训练', 'mid', 'daily', { due: '2026-08-31' }),
+      // 安安 · 中国舞
       t('anan', '中国舞', '基本功：竖叉横叉下腰', 'mid', 'weekly', { note: '每周 3 次，考级组合每次过一遍' }),
       t('anan', '中国舞', '考级曲目完整复习', 'high', 'weekly', { tags: ['考级'] }),
       t('ning', '英语启蒙', '磨耳朵动画 10 分钟', 'high', 'daily', { note: '超级简单儿歌 / Peppa Pig' }),
