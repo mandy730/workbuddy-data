@@ -649,7 +649,7 @@ function seed() {
       { id: uid(), days: [6], time: '18:30-20:00', title: '舞蹈课', sub: '中国舞' }
     ],
     schedCk: [],
-    xprofile: { name: 'Mandy囡囡超可爱', bio: '二年级宝妈 · 育儿教育IP · 用真实陪读经验帮焦虑妈妈少走弯路', tags: ['二年级宝妈', '育儿教育IP', '不制造焦虑'], audience: '二年级家长 / 焦虑妈妈', fans: 0, notes: 0 },
+    xprofile: { name: 'Mandy囡囡超可爱', bio: '二年级宝妈 · 育儿教育IP · 用真实陪读经验帮焦虑妈妈少走弯路', tags: ['二年级宝妈', '育儿教育IP', '不制造焦虑'], audience: '二年级家长 / 焦虑妈妈', fans: 0, notes: 0, totalViews: 0, totalFans: 0 },
     xnotes: [
       { id: uid(), title: '二年级形近字总丢分？3 个方法告别反复写错', author: '@小语姐备课', link: '', likes: 15600, points: '封面用对比图；正文三段式：痛点+孩子真实案例+3 步骤；评论区置顶资料包', tags: ['错题复盘', '二年级'] },
       { id: uid(), title: '二升三暑假别只刷题，补这 4 项底层能力', author: '@陪读妈妈阿May', link: '', likes: 22300, points: '高收藏款；用自家姐姐案例；结尾引导评论区提辅导难题', tags: ['三年级分水岭', '收藏向'] },
@@ -741,7 +741,8 @@ const MIGRATIONS = [
         if (t.douyin === undefined) t.douyin = false;
       });
       (db.xposts || []).forEach(p => { if (p.clicks === undefined) p.clicks = 0; });
-      if (!db.xprofile) db.xprofile = { name: 'Mandy囡囡超可爱', bio: '', tags: ['二年级宝妈', '育儿教育IP', '不制造焦虑'], audience: '', fans: 0, notes: 0 };
+      if (!db.xprofile) db.xprofile = { name: 'Mandy囡囡超可爱', bio: '', tags: ['二年级宝妈', '育儿教育IP', '不制造焦虑'], audience: '', fans: 0, notes: 0, totalViews: 0, totalFans: 0 };
+      else { if (db.xprofile.totalViews === undefined) db.xprofile.totalViews = 0; if (db.xprofile.totalFans === undefined) db.xprofile.totalFans = 0; }
     }
   },
   {
@@ -754,6 +755,14 @@ const MIGRATIONS = [
         { id: 'tpl-fanjiaolv-2', title: '我停掉这 2 个「为你好」的习惯后，孩子反而更主动了', dir: 'fanjiaolv', src: 'manual', status: 'idea', date: '', script: '', douyin: false, note: '结构：① 钩子「你也在做吗」 ② 案例：取消陪写作业+取消额外抄写 ③ 替换成什么。反焦虑人设，评论必吵，引理性讨论+私信', tags: ['反焦虑', '模板'] }
       ];
       tpl.forEach(t => { if (!db.xtopics.find(x => x.id === t.id)) db.xtopics.push(t); });
+    }
+  },
+  {
+    id: 'xhs-stat-2026-08',
+    run(db) {
+      const p = db.xprofile || (db.xprofile = { name: 'Mandy囡囡超可爱', bio: '', tags: ['二年级宝妈', '育儿教育IP', '不制造焦虑'], audience: '', fans: 0, notes: 0 });
+      if (p.totalViews === undefined) p.totalViews = 0;
+      if (p.totalFans === undefined) p.totalFans = 0;
     }
   }
 ];
@@ -1284,12 +1293,12 @@ function viewXhs() {
     <div class="bar" style="height:${Math.max(6, Number(p.views) / maxV * 88)}px"></div>
     <span>${esc(p.title.slice(0, 5))}</span></div>`).join('');
 
+  const fmtW = n => n >= 10000 ? (n / 10000).toFixed(1) + 'w' : Number(n || 0).toLocaleString();
   return `
-  <div class="grid g4">
+  <div class="grid g3">
     <div class="card xprof-stat" data-act="edit-profile"><div class="stat"><b>${Number(prof.fans || 0).toLocaleString()}</b><span>粉丝数 ✎</span></div></div>
-    <div class="card"><div class="stat"><b>${(tot('views') / 10000).toFixed(1)}w</b><span>累计曝光</span></div></div>
-    <div class="card"><div class="stat"><b>${tot('fans')}</b><span>累计涨粉</span></div></div>
-    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${tot('leads')}</b><span>私信咨询</span></div></div>
+    <div class="card xprof-stat" data-act="edit-profile"><div class="stat"><b>${fmtW(prof.totalViews || 0)}</b><span>累计曝光 ✎</span></div></div>
+    <div class="card xprof-stat" data-act="edit-profile"><div class="stat"><b>${Number(prof.totalFans || 0).toLocaleString()}</b><span>累计涨粉 ✎</span></div></div>
   </div>
 
   <div class="card xprof-card" data-act="edit-profile" style="cursor:pointer">
@@ -1733,12 +1742,15 @@ function profileForm() {
       { k: 'tags', label: '人设标签（逗号分隔）', val: (p.tags || []).join(','), ph: '二年级宝妈,育儿教育IP' },
       { k: 'audience', label: '目标人群', val: p.audience, ph: '二年级家长 / 焦虑妈妈' },
       { k: 'fans', label: '粉丝数', type: 'number', val: p.fans, half: 1 },
-      { k: 'notes', label: '笔记数', type: 'number', val: p.notes, half: 1 }
+      { k: 'notes', label: '笔记数', type: 'number', val: p.notes, half: 1 },
+      { k: 'totalViews', label: '累计曝光数', type: 'number', val: p.totalViews, half: 1 },
+      { k: 'totalFans', label: '累计涨粉', type: 'number', val: p.totalFans, half: 1 }
     ],
     onSave: d => {
       if (!d.name) return false;
       d.tags = d.tags ? d.tags.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
       d.fans = Number(d.fans) || 0; d.notes = Number(d.notes) || 0;
+      d.totalViews = Number(d.totalViews) || 0; d.totalFans = Number(d.totalFans) || 0;
       DB.xprofile = Object.assign({}, DB.xprofile, d);
     }
   });
