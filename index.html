@@ -341,18 +341,26 @@ table.data tr:last-child td{border-bottom:none}
 .mini-link{font-size:11px;color:var(--violet-500);word-break:break-all;text-decoration:none}
 .hl{background:linear-gradient(transparent 62%,var(--pink-200) 62%);padding:0 2px;font-weight:700}
 
-/* ---- 响应式：移动端抽屉 ---- */
+/* ---- 响应式：移动端固定窄边栏 ---- */
 @media(max-width:900px){
-  .app-main{margin-left:0}
-  .sidebar{transform:translateX(calc(-100% - 20px));transition:transform .28s cubic-bezier(.2,.9,.3,1)}
-  .sidebar.open{transform:translateX(0)}
-  .sidebar-backdrop.open{opacity:1;pointer-events:auto}
-  .menu-btn{display:grid;position:fixed;left:12px;top:12px;z-index:52}
-  .topbar-inner{padding-left:44px}
+  :root{--sidebar-w:70px}
+  .app-main{margin-left:var(--sidebar-w)}
+  .sidebar{padding:14px 6px 10px;align-items:center}
+  .sidebar-brand{margin-bottom:18px;padding:0}
+  .sidebar-brand .bow{font-size:28px}
+  .sidebar-brand h2,.sidebar-brand p{display:none}
+  .sidebar-nav{gap:10px;align-items:center}
+  .sidebar-item{flex-direction:column;justify-content:center;padding:8px 4px;gap:4px;border-radius:14px}
+  .sidebar-item .ic{width:34px;height:34px;font-size:18px}
+  .sidebar-item .txt,.sidebar-item .cnt{display:none}
+  .sidebar-footer{display:none}
+  .sidebar-backdrop{display:none}
+  .menu-btn{display:none !important}
+  .topbar-inner{padding-left:16px}
   .brand-text h1{font-size:15px}
 }
 @media(max-width:380px){
-  .sidebar{width:210px;--sidebar-w:210px}
+  :root{--sidebar-w:64px}
 }
 
 /* ---- 同步状态胶囊 ---- */
