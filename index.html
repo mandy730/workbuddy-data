@@ -981,8 +981,8 @@ function viewDash() {
   const follows = DB.tasks.filter(t => t.follow && !isDone(t) && daysBetween(TODAY(), t.follow) <= 7)
     .sort((a, b) => a.follow.localeCompare(b.follow));
   const mk = TODAY().slice(0, 7);
-  const mIn = DB.ledger.filter(l => monthKey(l.date) === mk && l.type === 'in').reduce((s, l) => s + Number(l.amount), 0);
-  const mOut = DB.ledger.filter(l => monthKey(l.date) === mk && l.type === 'out').reduce((s, l) => s + Number(l.amount), 0);
+  const mIn = DB.ledger.filter(l => monthKey(l.date) === mk && l.book === 'home' && l.type === 'in').reduce((s, l) => s + Number(l.amount), 0);
+  const mOut = DB.ledger.filter(l => monthKey(l.date) === mk && l.book === 'home' && l.type === 'out').reduce((s, l) => s + Number(l.amount), 0);
   const saved = DB.holdings.reduce((s, h) => s + Number(h.value || 0), 0);
 
   return `
@@ -1003,24 +1003,14 @@ function viewDash() {
   }).join('') : emptyBox('近 60 天没有赛事安排', '🏆')}
   </div>
 
-  <div class="grid g2" style="margin-top:14px">
-    <div class="card">
-      <div class="card-h"><h3>💰 本月财务</h3><span class="sub">${mk}</span></div>
-      <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
-        <div class="stat"><b class="pos">${money(mIn)}</b><span>收入</span></div>
-        <div class="stat"><b class="neg">${money(mOut)}</b><span>支出</span></div>
-      </div>
-      <div class="stat" style="margin-top:8px"><b>${money(mIn - mOut)}</b><span>本月结余</span></div>
-      <button class="add-line" style="margin-top:10px" data-act="add-ledger">＋ 快速记一笔</button>
+  <div class="card" style="margin-top:14px">
+    <div class="card-h"><h3>💰 本月财务</h3><span class="sub">家庭日常 · ${mk}</span></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+      <div class="stat"><b class="pos">${money(mIn)}</b><span>收入</span></div>
+      <div class="stat"><b class="neg">${money(mOut)}</b><span>支出</span></div>
     </div>
-    <div class="card">
-      <div class="card-h"><h3>📕 小红书进度</h3></div>
-      <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
-        <div class="stat"><b>${DB.xtopics.filter(t => t.status !== 'published').length}</b><span>在推进选题</span></div>
-        <div class="stat"><b>${DB.xposts.length}</b><span>已发布笔记</span></div>
-        <div class="stat"><b>${DB.xnotes.length}</b><span>爆款素材</span></div>
-      </div>
-    </div>
+    <div class="stat" style="margin-top:8px"><b>${money(mIn - mOut)}</b><span>本月结余</span></div>
+    <button class="add-line" style="margin-top:10px" data-act="add-ledger" data-book="home">＋ 快速记一笔</button>
   </div>`;
 }
 
