@@ -388,6 +388,32 @@ table.data tr:last-child td{border-bottom:none}
 .dash-sched-i.done .dash-sched-t{opacity:.55}
 .dash-sched-i.done .dash-sched-line{opacity:.4}
 
+/* ---- 小红书专业运营模块 ---- */
+.xprof-stat{cursor:pointer}
+.xprof-card{box-shadow:none;border:1px solid var(--line);background:linear-gradient(135deg,#fff,var(--pink-50))}
+.xprof-card .card-h{margin-bottom:8px}
+.xprof-tags{display:flex;flex-wrap:wrap;gap:6px}
+.xprof-bio{margin:8px 0;font-size:13px;color:var(--ink-2);line-height:1.6}
+.xprof-foot{margin-top:10px;font-size:12px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px}
+.p-dir{background:var(--pink-100);color:var(--pink-600);font-weight:700}
+.p-dy{background:#eafaf3;color:#1f9c67;font-weight:700}
+.xwk{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.xwk .wk-cell{background:var(--pink-50);border-radius:12px;padding:8px 6px;min-height:120px;display:flex;flex-direction:column;gap:6px}
+.xwk .wk-cell.today{outline:2px solid var(--pink-300);background:#fff}
+.xwk .wk-h{font-size:12px;font-weight:800;color:var(--pink-600);text-align:center}
+.xwk .wk-h small{display:block;font-weight:500;color:var(--muted);font-size:10px}
+.xwk .wk-item{background:#fff;border-radius:9px;padding:6px 7px;cursor:pointer;transition:.15s;border:1px solid var(--line)}
+.xwk .wk-item:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.xwk .wk-item.done{opacity:.6}
+.xwk .wk-item.done b{text-decoration:line-through}
+.xwk .wk-dir{display:inline-block;font-size:9.5px;font-weight:800;color:var(--pink-600);background:var(--pink-100);border-radius:6px;padding:1px 5px;margin-bottom:2px}
+.xwk .wk-item b{display:block;font-size:11px;line-height:1.3;color:var(--ink);font-weight:600}
+.xwk .wk-item i{font-size:10px;color:var(--muted);font-style:normal}
+.xwk .wk-empty{text-align:center;color:var(--muted);font-size:16px;margin-top:auto;margin-bottom:auto}
+.field-ck{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);cursor:pointer;padding:4px 0}
+.field-ck input{width:16px;height:16px;accent-color:var(--pink-600)}
+@media(max-width:760px){.xwk{grid-template-columns:repeat(3,1fr)}.xwk .wk-cell{min-height:90px}}
+
 </style>
 </head>
 <body>
@@ -466,7 +492,7 @@ const MODULES = [
   { id: 'ning', name: '宁宁教育', emoji: '🍼', kind: 'parenting', desc: '4岁 · 启蒙', subs: ['英语启蒙', '数学启蒙', '中文绘本'] },
   { id: 'trade', name: '外贸工作', emoji: '💼', kind: 'business', desc: 'DARKO · 日常 · AI', subs: ['DARKO工作', '日常工作待办', 'AI工具学习'] },
   { id: 'life', name: '个人计划', emoji: '💃', kind: 'life', desc: '爵士舞 · 阅读 · 购物', subs: ['爵士舞', '阅读', '生活购物', '我的日程'] },
-  { id: 'xhs', name: '小红书', emoji: '📕', kind: 'business', desc: '婚纱摄影引流', subs: ['爆款笔记', '选题策划', '数据统计'] },
+  { id: 'xhs', name: '小红书', emoji: '📕', kind: 'business', desc: '育儿教育IP · 二年级宝妈', subs: ['选题库', '爆款拆解', '数据复盘'] },
   { id: 'money', name: '财务管理', emoji: '💰', kind: 'life', desc: '家庭 · 外贸 · 理财', subs: ['家庭日常', '外贸收支', '理财台账'] }
 ];
 const MOD = id => MODULES.find(m => m.id === id) || MODULES[0];
@@ -482,8 +508,12 @@ const STAGES = [
   { id: 'order', n: '订单生产' }, { id: 'ship', n: '出货售后' }
 ];
 const XSTATUS = [
-  { id: 'idea', n: '选题池' }, { id: 'writing', n: '文案撰写' }, { id: 'shoot', n: '拍摄制作' },
-  { id: 'scheduled', n: '待发布' }, { id: 'published', n: '已发布' }
+  { id: 'idea', n: '灵感' }, { id: 'script', n: '写脚本' }, { id: 'shoot', n: '拍摄' },
+  { id: 'published', n: '已发布' }, { id: 'review', n: '复盘' }
+];
+const XDIRS = [
+  { id: 'cuotiben', n: '错题复盘' }, { id: 'fenlishui', n: '三年级分水岭' },
+  { id: 'ertai', n: '二胎家庭痛点' }, { id: 'fanjiaolv', n: '反焦虑方法论' }
 ];
 const LEDGER_BOOKS = { home: '家庭日常', trade: '外贸收支', invest: '理财台账' };
 const CATS = {
@@ -549,9 +579,9 @@ function seed() {
       t('trade', '日常工作待办', '整理月度出货报表', 'mid', 'monthly'),
       t('trade', 'AI工具学习', '每周精学 1 个 AI 工具并输出笔记', 'mid', 'weekly', { tags: ['AI', '成长'] }),
       t('trade', 'AI工具学习', '沉淀外贸提示词库', 'low', 'weekly', { note: '开发信 / 议价 / 产品文案三类' }),
-      t('xhs', '选题策划', '每周产出 3 条选题脚本', 'high', 'weekly', { tags: ['内容'] }),
-      t('xhs', '爆款笔记', '拆解 5 篇同城婚纱爆款', 'mid', 'weekly'),
-      t('xhs', '数据统计', '周数据复盘 + 到店线索统计', 'mid', 'weekly'),
+      t('xhs', '选题库', '每周产出 3 条选题脚本', 'high', 'weekly', { tags: ['内容'] }),
+      t('xhs', '爆款拆解', '拆解 5 篇育儿教育爆款', 'mid', 'weekly'),
+      t('xhs', '数据复盘', '周数据复盘 + 私信咨询统计', 'mid', 'weekly'),
       t('life', '爵士舞', '舞室课程（周二 / 周五）', 'mid', 'weekly'),
       t('life', '阅读', '睡前阅读 30 分钟', 'mid', 'daily'),
       t('life', '生活购物', '每周家庭采购清单整理', 'low', 'weekly'),
@@ -574,21 +604,22 @@ function seed() {
       { id: uid(), days: [6], time: '18:30-20:00', title: '舞蹈课', sub: '中国舞' }
     ],
     schedCk: [],
+    xprofile: { name: 'Mandy囡囡超可爱', bio: '二年级宝妈 · 育儿教育IP · 用真实陪读经验帮焦虑妈妈少走弯路', tags: ['二年级宝妈', '育儿教育IP', '不制造焦虑'], audience: '二年级家长 / 焦虑妈妈', fans: 0, notes: 0 },
     xnotes: [
-      { id: uid(), title: '“预算 3000 也能拍出高级感”对比图爆款', author: '@小城婚纱日记', link: '', likes: 12800, points: '封面用左右对比图；文案强调预算痛点；评论区置顶到店福利', tags: ['对比图', '价格锚点'] },
-      { id: uid(), title: '新娘避坑指南 · 拍摄前必问的 8 个问题', author: '@婚礼筹备笔记', link: '', likes: 8600, points: '干货清单体，收藏率高；结尾引导私信领取清单', tags: ['干货', '引流私信'] },
-      { id: uid(), title: '素人改造 vlog：普通女孩的高定瞬间', author: '@喜嫁研究所', link: '', likes: 20400, points: '真人故事线 + 前后反差；本地关键词带定位', tags: ['vlog', '素人改造'] }
+      { id: uid(), title: '二年级形近字总丢分？3 个方法告别反复写错', author: '@小语姐备课', link: '', likes: 15600, points: '封面用对比图；正文三段式：痛点+孩子真实案例+3 步骤；评论区置顶资料包', tags: ['错题复盘', '二年级'] },
+      { id: uid(), title: '二升三暑假别只刷题，补这 4 项底层能力', author: '@陪读妈妈阿May', link: '', likes: 22300, points: '高收藏款；用自家姐姐案例；结尾引导评论区提辅导难题', tags: ['三年级分水岭', '收藏向'] },
+      { id: uid(), title: '二胎时间管理：一边陪二年级写作业一边带 3 岁', author: '@二胎摆烂日记', link: '', likes: 18900, points: '差异化痛点；真实日程表截图；引发二胎宝妈共鸣评论', tags: ['二胎家庭', '时间分配'] }
     ],
     xtopics: [
-      { id: uid(), title: '本地取景地 TOP5 · 春季婚纱照攻略', status: 'idea', date: '', note: '结合门店样片，带地址定位', tags: ['本地'] },
-      { id: uid(), title: '婚纱照拍摄当天时间表（可保存）', status: 'writing', date: ymd(addDays(new Date(), 2)), note: '做成表格图，收藏向', tags: ['干货'] },
-      { id: uid(), title: '素人改造：95 后准新娘的一天', status: 'shoot', date: ymd(addDays(new Date(), 4)), note: '需约客户拍 vlog，出镜授权', tags: ['vlog'] },
-      { id: uid(), title: '3000/6000/1w 三档套系到底差在哪', status: 'scheduled', date: ymd(addDays(new Date(), 1)), note: '价格锚点，引导咨询', tags: ['转化'] }
+      { id: uid(), title: '姐姐今天形近字又写错｜错字本 + 复述法搞定', dir: 'cuotiben', src: 'anan', status: 'idea', date: '', script: '', douyin: false, note: '错题复盘系列：现象 + 原因 + 3 步骤，插 10 秒孩子复盘片段', tags: ['错题复盘'] },
+      { id: uid(), title: '二年级埋的 3 个暗坑，三年级容易掉队', dir: 'fenlishui', src: 'manual', status: 'script', date: ymd(addDays(new Date(), 2)), script: '', douyin: false, note: '三年级分水岭预警，高收藏', tags: ['三年级分水岭'] },
+      { id: uid(), title: '让大宝复述知识点，既巩固课内又给小宝早教', dir: 'ertai', src: 'manual', status: 'shoot', date: ymd(addDays(new Date(), 4)), script: '', douyin: false, note: '二胎家庭痛点，录制大宝讲题片段', tags: ['二胎家庭'] },
+      { id: uid(), title: '放弃海量抄写，费曼复述记忆效率翻倍', dir: 'fanjiaolv', src: 'manual', status: 'published', date: ymd(addDays(new Date(), 1)), script: '', douyin: true, note: '反焦虑方法论，高互动引评论', tags: ['反焦虑', '学习方法'] }
     ],
     xposts: [
-      { id: uid(), title: '春季取景地攻略', date: ymd(addDays(new Date(), -12)), views: 15200, likes: 860, favs: 430, comments: 62, fans: 45, leads: 6 },
-      { id: uid(), title: '婚纱照避坑 8 问', date: ymd(addDays(new Date(), -8)), views: 23800, likes: 1520, favs: 980, comments: 118, fans: 96, leads: 11 },
-      { id: uid(), title: '素人改造 vlog 01', date: ymd(addDays(new Date(), -3)), views: 9400, likes: 520, favs: 210, comments: 44, fans: 28, leads: 4 }
+      { id: uid(), title: '形近字 3 招告别写错', date: ymd(addDays(new Date(), -12)), views: 18200, clicks: 2400, likes: 1260, favs: 630, comments: 92, fans: 58, leads: 7 },
+      { id: uid(), title: '二升三别只刷题', date: ymd(addDays(new Date(), -8)), views: 25600, clicks: 3100, likes: 1820, favs: 1180, comments: 138, fans: 106, leads: 13 },
+      { id: uid(), title: '二胎时间管理 vlog 01', date: ymd(addDays(new Date(), -3)), views: 11400, clicks: 1500, likes: 720, favs: 310, comments: 54, fans: 38, leads: 5 }
     ],
     books: [
       { id: uid(), title: '《正面管教》', total: 320, current: 128, note: '育儿沟通' },
@@ -648,6 +679,23 @@ const MIGRATIONS = [
       );
       const goals = { '数学': 4, '语文': 4, '英语': 4, '数独': 2 };
       (db.subjects || []).forEach(s => { if (s.mod === 'anan' && goals[s.name]) s.goal = goals[s.name]; });
+    }
+  },
+  {
+    id: 'xhs-pro-2026-08',
+    run(db) {
+      const map = { idea: 'idea', writing: 'script', shoot: 'shoot', scheduled: 'published', published: 'published' };
+      const dirMap = { '错题复盘': 'cuotiben', '三年级分水岭': 'fenlishui', '二胎': 'ertai', '反焦虑': 'fanjiaolv' };
+      (db.xtopics || []).forEach(t => {
+        t.status = map[t.status] || 'idea';
+        const tagStr = (t.tags || []).join(',');
+        t.dir = t.dir || (Object.keys(dirMap).find(k => tagStr.indexOf(k) >= 0) || 'cuotiben');
+        t.src = t.src || 'manual';
+        if (t.script === undefined) t.script = '';
+        if (t.douyin === undefined) t.douyin = false;
+      });
+      (db.xposts || []).forEach(p => { if (p.clicks === undefined) p.clicks = 0; });
+      if (!db.xprofile) db.xprofile = { name: 'Mandy囡囡超可爱', bio: '', tags: ['二年级宝妈', '育儿教育IP', '不制造焦虑'], audience: '', fans: 0, notes: 0 };
     }
   }
 ];
@@ -903,7 +951,7 @@ function viewDash() {
       <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
         <div class="stat"><b>${DB.xtopics.filter(t => t.status !== 'published').length}</b><span>在推进选题</span></div>
         <div class="stat"><b>${DB.xposts.length}</b><span>已发布笔记</span></div>
-        <div class="stat"><b>${DB.xposts.reduce((s, p) => s + Number(p.leads || 0), 0)}</b><span>到店咨询</span></div>
+        <div class="stat"><b>${DB.xposts.reduce((s, p) => s + Number(p.leads || 0), 0)}</b><span>私信咨询</span></div>
         <div class="stat"><b>${DB.xnotes.length}</b><span>爆款素材</span></div>
       </div>
     </div>
@@ -1096,21 +1144,46 @@ function viewTrade() {
   <div class="grid g3">${MOD('trade').subs.map(s => taskGroup('trade', s)).join('')}</div>`;
 }
 
-/* ---------- 视图：小红书 ---------- */
+/* ---------- 视图：小红书（专业运营模块） ---------- */
+let xhsDirFilter = '';
 function viewXhs() {
+  const prof = DB.xprofile || {};
   const tot = k => DB.xposts.reduce((s, p) => s + Number(p[k] || 0), 0);
+  const dirName = id => (XDIRS.find(d => d.id === id) || {}).n || '未分类';
+
+  // 选题库看板（按状态分列）
+  const topics = DB.xtopics.filter(t => !xhsDirFilter || t.dir === xhsDirFilter);
   const board = XSTATUS.map(s => {
-    const items = DB.xtopics.filter(t => t.status === s.id);
+    const items = topics.filter(t => t.status === s.id);
     return `<div class="kb-col"><h4>${s.n}<span>${items.length}</span></h4>
       ${items.map(t => `<div class="kb-card" data-act="edit-topic" data-id="${t.id}">
         <b>${esc(t.title)}</b>
-        <div class="t-meta">${t.date ? `<span class="pill p-date">📅 ${t.date.slice(5)}</span>` : ''}
-        ${(t.tags || []).map(x => `<span class="pill p-tag"># ${esc(x)}</span>`).join('')}</div>
+        <div class="t-meta">
+          <span class="pill p-dir">${dirName(t.dir)}</span>
+          ${t.date ? `<span class="pill p-date">📅 ${t.date.slice(5)}</span>` : ''}
+          ${t.douyin ? `<span class="pill p-dy">▶ 抖音</span>` : ''}
+        </div>
+        ${t.script ? `<p style="font-size:11px;margin:5px 0 0">🔗 <a class="mini-link" href="${esc(t.script)}" target="_blank" rel="noopener">脚本</a></p>` : ''}
         ${t.note ? `<div class="t-note">${esc(t.note)}</div>` : ''}
       </div>`).join('') || `<div style="font-size:11px;color:var(--muted);text-align:center;padding:8px">暂无</div>`}
     </div>`;
   }).join('');
 
+  // 发布排期（本周视图，从选题计划发布日生成）
+  const sow = startOfWeek(new Date());
+  const schedHtml = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(sow, i); const ds = ymd(d);
+    const items = DB.xtopics.filter(t => t.date === ds);
+    return `<div class="wk-cell ${ds === TODAY() ? 'today' : ''}">
+      <div class="wk-h">${WD[(d.getDay() + 6) % 7]}<small>${d.getMonth() + 1}/${d.getDate()}</small></div>
+      ${items.map(t => `<div class="wk-item ${t.status === 'published' ? 'done' : ''}" data-act="edit-topic" data-id="${t.id}">
+        <span class="wk-dir">${dirName(t.dir)}</span>
+        <b>${esc(t.title)}</b><i>${esc((XSTATUS.find(s => s.id === t.status) || {}).n || '')}</i>
+      </div>`).join('') || `<div class="wk-empty">—</div>`}
+    </div>`;
+  }).join('');
+
+  // 数据看板
   const maxV = Math.max(1, ...DB.xposts.map(p => Number(p.views || 0)));
   const bars = DB.xposts.slice(-8).map(p => `<div class="bar-i">
     <b>${(Number(p.views) / 1000).toFixed(1)}k</b>
@@ -1119,13 +1192,35 @@ function viewXhs() {
 
   return `
   <div class="grid g4">
+    <div class="card xprof-stat" data-act="edit-profile"><div class="stat"><b>${Number(prof.fans || 0).toLocaleString()}</b><span>粉丝数 ✎</span></div></div>
     <div class="card"><div class="stat"><b>${(tot('views') / 10000).toFixed(1)}w</b><span>累计曝光</span></div></div>
-    <div class="card"><div class="stat"><b>${tot('likes')}</b><span>累计点赞</span></div></div>
     <div class="card"><div class="stat"><b>${tot('fans')}</b><span>累计涨粉</span></div></div>
-    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${tot('leads')}</b><span>到店咨询线索</span></div></div>
+    <div class="card"><div class="stat"><b style="color:var(--pink-600)">${tot('leads')}</b><span>私信咨询</span></div></div>
   </div>
 
-  <h2 class="section-title">🔥 爆款笔记收集 <small>拆解可复用套路</small></h2>
+  <div class="card xprof-card" data-act="edit-profile" style="cursor:pointer">
+    <div class="card-h"><h3>🪪 账号档案 · ${esc(prof.name || '未命名')}</h3><span class="sub">点击编辑 ✎</span></div>
+    <div class="xprof-tags">${(prof.tags || []).map(x => `<span class="pill p-tag"># ${esc(x)}</span>`).join('') || '<span class="muted">还没设标签</span>'}</div>
+    ${prof.bio ? `<p class="xprof-bio">${esc(prof.bio)}</p>` : ''}
+    ${prof.audience ? `<div class="t-meta"><span class="pill p-sub">🎯 ${esc(prof.audience)}</span></div>` : ''}
+    <div class="xprof-foot">笔记 ${Number(prof.notes || 0)} 篇 · 粉丝 ${Number(prof.fans || 0).toLocaleString()}</div>
+  </div>
+
+  <h2 class="section-title">📋 选题库 <small>内容生产中枢 · 点卡片编辑</small></h2>
+  <div class="chips" style="margin-bottom:10px">
+    <button class="chip ${!xhsDirFilter ? 'on' : ''}" data-act="xhs-dir" data-d="">全部</button>
+    ${XDIRS.map(d => `<button class="chip ${xhsDirFilter === d.id ? 'on' : ''}" data-act="xhs-dir" data-d="${d.id}">${d.n}</button>`).join('')}
+  </div>
+  <div class="card"><div class="kb">${board}</div>
+    <button class="add-line" style="margin-top:10px" data-act="add-topic">＋ 新增选题</button>
+  </div>
+
+  <h2 class="section-title">🗓 发布排期 <small>本周计划 · 标了发布日的选题会自动出现</small></h2>
+  <div class="card"><div class="xwk">${schedHtml}</div>
+    <div class="t-note" style="margin-top:8px;font-size:11.5px">💡 在「选题库」里给选题填「计划发布日」和状态，就会自动排进本周视图。</div>
+  </div>
+
+  <h2 class="section-title">🔥 爆款拆解 <small>收藏可复用套路</small></h2>
   <div class="grid g3">
     ${DB.xnotes.map(n => `<div class="note-card">
       <h4>${esc(n.title)}</h4>
@@ -1138,28 +1233,25 @@ function viewXhs() {
         <button class="btn btn-g btn-sm" data-act="edit-note" data-id="${n.id}">编辑</button>
         <button class="btn btn-g btn-sm" data-act="del-note" data-id="${n.id}">删除</button>
       </div>
-    </div>`).join('') || emptyBox('先去收集几篇同城爆款吧', '🔥')}
+    </div>`).join('') || emptyBox('先去收集几篇育儿教育爆款吧', '🔥')}
   </div>
   <button class="add-line" style="margin-top:12px" data-act="add-note">＋ 收集一篇爆款笔记</button>
 
-  <h2 class="section-title">📝 选题策划看板</h2>
-  <div class="card"><div class="kb">${board}</div>
-    <button class="add-line" style="margin-top:10px" data-act="add-topic">＋ 新增选题</button>
-  </div>
-
-  <h2 class="section-title">📈 发布后数据统计</h2>
+  <h2 class="section-title">📈 数据看板</h2>
   <div class="card">
     <div class="card-h"><h3>曝光趋势</h3><span class="sub">最近 ${Math.min(8, DB.xposts.length)} 篇</span></div>
     <div class="bars">${bars || ''}</div>
   </div>
   <div class="card" style="margin-top:12px">
     <div class="tbl-wrap"><table class="data">
-      <tr><th>笔记</th><th>发布日</th><th>曝光</th><th>点赞</th><th>收藏</th><th>评论</th><th>涨粉</th><th>咨询</th><th>互动率</th><th></th></tr>
+      <tr><th>笔记</th><th>发布日</th><th>曝光</th><th>点击</th><th>点赞</th><th>收藏</th><th>评论</th><th>涨粉</th><th>咨询</th><th>互动率</th><th></th></tr>
       ${DB.xposts.slice().sort((a, b) => b.date.localeCompare(a.date)).map(p => {
     const rate = p.views ? ((Number(p.likes) + Number(p.favs) + Number(p.comments)) / p.views * 100).toFixed(1) : '0';
     return `<tr><td><b>${esc(p.title)}</b></td><td>${p.date.slice(5)}</td>
-      <td class="num">${Number(p.views).toLocaleString()}</td><td class="num">${p.likes}</td>
-      <td class="num">${p.favs}</td><td class="num">${p.comments}</td>
+      <td class="num">${Number(p.views).toLocaleString()}</td>
+      <td class="num">${Number(p.clicks || 0).toLocaleString()}</td>
+      <td class="num">${p.likes}</td><td class="num">${p.favs}</td>
+      <td class="num">${p.comments}</td>
       <td class="num pos">+${p.fans}</td><td class="num" style="color:var(--pink-600)">${p.leads}</td>
       <td class="num">${rate}%</td>
       <td><button class="mini" data-act="edit-post" data-id="${p.id}">✎</button>
@@ -1327,6 +1419,7 @@ function openForm(cfg) {
       const sel = new Set(String(v).split(',').filter(Boolean));
       inp = `<div class="wk-pick">${WK.map(([w, d]) => `<button type="button" class="wk-chip ${sel.has(String(d)) ? 'on' : ''}" data-d="${d}">${w}</button>`).join('')}</div><input type="hidden" name="${fd.k}" value="${esc(String(v))}"/>`;
     }
+    else if (fd.type === 'checkbox') inp = `<label class="field-ck"><input type="checkbox" name="${fd.k}" ${v ? 'checked' : ''}/> <span>${esc(fd.ckText || '是')}</span></label>`;
     else inp = `<input name="${fd.k}" type="${fd.type || 'text'}" value="${esc(v)}" placeholder="${esc(fd.ph || '')}" ${fd.type === 'number' ? 'step="0.01"' : ''}/>`;
     return `<div class="field" style="${fd.half ? '' : 'grid-column:1/-1'}"><label>${esc(fd.label)}</label>${inp}</div>`;
   }).join('');
@@ -1491,13 +1584,17 @@ function noteForm(n) {
   });
 }
 function topicForm(t) {
-  const isNew = !t; t = t || { status: 'idea' };
+  const isNew = !t; t = t || { status: 'idea', dir: 'cuotiben', src: 'manual', script: '', douyin: false };
   openForm({
     title: isNew ? '新增选题' : '编辑选题',
     fields: [
       { k: 'title', label: '选题标题 *', val: t.title },
+      { k: 'dir', label: '选题方向', type: 'select', val: t.dir, half: 1, opts: XDIRS.map(d => ({ v: d.id, t: d.n })) },
+      { k: 'src', label: '来源', type: 'select', val: t.src, half: 1, opts: [{ v: 'manual', t: '手动灵感' }, { v: 'anan', t: '安安错题' }] },
       { k: 'status', label: '当前状态', type: 'select', val: t.status, half: 1, opts: XSTATUS.map(s => ({ v: s.id, t: s.n })) },
       { k: 'date', label: '计划发布日', type: 'date', val: t.date, half: 1 },
+      { k: 'script', label: '脚本链接（豆包/腾讯文档）', val: t.script, ph: 'https://...' },
+      { k: 'douyin', label: '抖音已搬运', type: 'checkbox', val: !!t.douyin, half: 1 },
       { k: 'tags', label: '标签（逗号分隔）', val: (t.tags || []).join(',') },
       { k: 'note', label: '拍摄 / 文案要点', type: 'textarea', val: t.note }
     ],
@@ -1505,6 +1602,7 @@ function topicForm(t) {
     onSave: d => {
       if (!d.title) return false;
       d.tags = d.tags ? d.tags.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
+      d.douyin = d.douyin === 'on' || d.douyin === true;
       isNew ? DB.xtopics.push(Object.assign({ id: uid() }, d)) : Object.assign(t, d);
     }
   });
@@ -1517,14 +1615,34 @@ function postForm(p) {
     fields: [
       { k: 'title', label: '笔记标题 *', val: p.title },
       { k: 'date', label: '发布日期', type: 'date', val: p.date, half: 1 },
-      nf('views', '曝光量'), nf('likes', '点赞'), nf('favs', '收藏'),
-      nf('comments', '评论'), nf('fans', '涨粉'), nf('leads', '到店咨询')
+      nf('views', '曝光量'), nf('clicks', '点击量'), nf('likes', '点赞'), nf('favs', '收藏'),
+      nf('comments', '评论'), nf('fans', '涨粉'), nf('leads', '私信咨询')
     ],
     onDelete: isNew ? null : () => { DB.xposts = DB.xposts.filter(x => x.id !== p.id); },
     onSave: d => {
       if (!d.title) return false;
-      ['views', 'likes', 'favs', 'comments', 'fans', 'leads'].forEach(k => d[k] = Number(d[k]) || 0);
+      ['views', 'clicks', 'likes', 'favs', 'comments', 'fans', 'leads'].forEach(k => d[k] = Number(d[k]) || 0);
       isNew ? DB.xposts.push(Object.assign({ id: uid() }, d)) : Object.assign(p, d);
+    }
+  });
+}
+function profileForm() {
+  const p = DB.xprofile || {};
+  openForm({
+    title: '编辑账号档案',
+    fields: [
+      { k: 'name', label: '账号昵称 *', val: p.name },
+      { k: 'bio', label: '简介 / 签名', type: 'textarea', val: p.bio, ph: '一句话说清你是谁、能帮粉丝解决什么' },
+      { k: 'tags', label: '人设标签（逗号分隔）', val: (p.tags || []).join(','), ph: '二年级宝妈,育儿教育IP' },
+      { k: 'audience', label: '目标人群', val: p.audience, ph: '二年级家长 / 焦虑妈妈' },
+      { k: 'fans', label: '粉丝数', type: 'number', val: p.fans, half: 1 },
+      { k: 'notes', label: '笔记数', type: 'number', val: p.notes, half: 1 }
+    ],
+    onSave: d => {
+      if (!d.name) return false;
+      d.tags = d.tags ? d.tags.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
+      d.fans = Number(d.fans) || 0; d.notes = Number(d.notes) || 0;
+      DB.xprofile = Object.assign({}, DB.xprofile, d);
     }
   });
 }
@@ -1771,6 +1889,8 @@ document.addEventListener('click', e => {
     case 'add-post': postForm(); break;
     case 'edit-post': postForm(DB.xposts.find(x => x.id === id)); break;
     case 'del-post': if (confirm('删除该条数据？')) { DB.xposts = DB.xposts.filter(x => x.id !== id); save(); render(); } break;
+    case 'xhs-dir': xhsDirFilter = id; render(); break;
+    case 'edit-profile': profileForm(); break;
     case 'add-book': bookForm(); break;
     case 'edit-book': bookForm(DB.books.find(x => x.id === id)); break;
     case 'del-book': if (confirm('删除这本书？')) { DB.books = DB.books.filter(x => x.id !== id); save(); render(); } break;
