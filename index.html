@@ -697,6 +697,18 @@ const MIGRATIONS = [
       (db.xposts || []).forEach(p => { if (p.clicks === undefined) p.clicks = 0; });
       if (!db.xprofile) db.xprofile = { name: 'Mandy囡囡超可爱', bio: '', tags: ['二年级宝妈', '育儿教育IP', '不制造焦虑'], audience: '', fans: 0, notes: 0 };
     }
+  },
+  {
+    id: 'xhs-tpl-2026-08',
+    run(db) {
+      db.xtopics = db.xtopics || [];
+      const tpl = [
+        { id: 'tpl-cuotiben-2', title: '一道题错 3 遍？我用「说题法」让安安自己发现错哪了', dir: 'cuotiben', src: 'manual', status: 'idea', date: '', script: '', douyin: false, note: '结构：① 钩子「别急着讲答案，先让他说」 ② 案例：安安形近字反复错，让她指读+说理由 ③ 3步：指读→说错因→换一道自测。拍10秒孩子说题片段，真人出镜更可信', tags: ['错题复盘', '模板'] },
+        { id: 'tpl-fenlishui-2', title: '二年级看着还行，三年级突然崩？提前练这 2 个能力', dir: 'fenlishui', src: 'manual', status: 'idea', date: '', script: '', douyin: false, note: '结构：① 钩子「三年级是道坎不是吓你」 ② 案例：同学二年级满分三年级掉到70 ③ 2个能力：阅读提炼+应用题审题，给1个在家可练小游戏。高收藏型', tags: ['三年级分水岭', '模板'] },
+        { id: 'tpl-fanjiaolv-2', title: '我停掉这 2 个「为你好」的习惯后，孩子反而更主动了', dir: 'fanjiaolv', src: 'manual', status: 'idea', date: '', script: '', douyin: false, note: '结构：① 钩子「你也在做吗」 ② 案例：取消陪写作业+取消额外抄写 ③ 替换成什么。反焦虑人设，评论必吵，引理性讨论+私信', tags: ['反焦虑', '模板'] }
+      ];
+      tpl.forEach(t => { if (!db.xtopics.find(x => x.id === t.id)) db.xtopics.push(t); });
+    }
   }
 ];
 function migrate(db) {
