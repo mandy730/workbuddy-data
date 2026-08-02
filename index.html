@@ -414,6 +414,30 @@ table.data tr:last-child td{border-bottom:none}
 .field-ck input{width:16px;height:16px;accent-color:var(--pink-600)}
 @media(max-width:760px){.xwk{grid-template-columns:repeat(3,1fr)}.xwk .wk-cell{min-height:90px}}
 
+/* ---- 小红书 · 开号初期每日SOP打卡 + 对标追踪 ---- */
+.sop-card{box-shadow:none;border:1px solid var(--line);background:linear-gradient(135deg,#fff,#fff7fc)}
+.sop-sec{margin-top:10px}
+.sop-sec-h{font-size:12.5px;font-weight:800;color:var(--pink-600);margin-bottom:6px}
+.sop-sec-h small{font-weight:500;color:var(--muted);font-size:10.5px;margin-left:4px}
+.sop-row{display:flex;gap:9px;align-items:flex-start;padding:8px 6px;border-radius:10px;cursor:pointer;transition:background .15s}
+.sop-row+.sop-row{border-top:1px dashed var(--line)}
+.sop-row:hover{background:var(--pink-50)}
+.sop-row.done{opacity:.62}
+.sop-row.done .sop-body b{text-decoration:line-through}
+.sop-ck{flex:none;font-size:16px;line-height:1.2;width:18px;text-align:center}
+.sop-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sop-body b{font-size:13px;font-weight:600;color:var(--ink);line-height:1.35}
+.sop-body span{font-size:11px;color:var(--muted);line-height:1.5}
+.sop-note{margin-top:10px;font-size:11.5px;color:var(--muted);background:var(--pink-50);border-radius:10px;padding:9px 11px;line-height:1.6}
+.sop-rival{box-shadow:none;border:1px solid var(--line);background:linear-gradient(135deg,#fff,#f3f7ff)}
+.rival{padding:9px 0;border-bottom:1px dashed var(--line)}
+.rival:last-of-type{border-bottom:none}
+.rival b{font-size:13px;color:var(--ink)}
+.rival-tag{display:inline-block;font-size:10px;font-weight:800;color:#2f6bd8;background:#e7efff;border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+.rival p{margin:5px 0 0;font-size:11.5px;color:var(--ink-2);line-height:1.6}
+.sop-redline{margin-top:9px;font-size:11.5px;color:var(--ink-2);background:#fff;border:1px solid var(--line);border-left:3px solid var(--pink-600);border-radius:10px;padding:9px 11px;line-height:1.7}
+.sop-redline b{color:var(--pink-600)}
+
 </style>
 </head>
 <body>
@@ -515,6 +539,27 @@ const XDIRS = [
   { id: 'cuotiben', n: '错题复盘' }, { id: 'fenlishui', n: '三年级分水岭' },
   { id: 'ertai', n: '二胎家庭痛点' }, { id: 'fanjiaolv', n: '反焦虑方法论' }
 ];
+const XSOP = {
+  daily: [
+    { id: 'sop-d1', t: '姐姐作业后口述 10 分钟', n: '让她讲「今天错哪、卡哪」，手机支架录 10–30 秒（自然，别表演）→ 二年级复盘独家素材' },
+    { id: 'sop-d2', t: '妹妹小班日常随手拍 1–2 张', n: '自己吃饭 / 玩玩具 / 读绘本都行（真实感 > 精致度）' },
+    { id: 'sop-d3', t: '睡前 2 分钟写一句「今天能发啥」', n: '备忘录即可，养成素材直觉' },
+    { id: 'sop-d4', t: '刷周小妍妍子主页 2 分钟', n: '看「放学后 4 小时 / 12 小时」系列，记 1 条结构或封面标题公式' }
+  ],
+  post: [
+    { id: 'sop-p1', t: '匹配选题（真实素材优先）', n: '打开选题池，优先级：有真实素材 > 蹭热点 > 提前备好' },
+    { id: 'sop-p2', t: '生产：三段式 + 双娃同框封面 + 5–8 标签', n: '痛点钩子→真实案例→3 步；封面大字标题 + 真实对比图' },
+    { id: 'sop-p3', t: '套用「打怪升级」框架 1 处', n: '把学习记录包装成「通关关卡」，如《二年级生字打怪》' },
+    { id: 'sop-p4', t: '发布 7–9pm / 3pm + 2h 内回评 + 截流 2–3 条', n: '亲自回前 30 条评论用提问引互动；去同类爆款下真诚留言' }
+  ],
+  weekend: [
+    { id: 'sop-w1', t: '复盘高数据篇 → 复制同类', n: '学周小妍妍子系列化思维' },
+    { id: 'sop-w2', t: '更新合集（学习记录 / 二胎日常 / 分龄好物 / 妈妈碎碎念）', n: '' },
+    { id: 'sop-w3', t: '拆对标 2 篇（周小妍妍子 1 + 黑米 1）', n: '填《单篇拆解表》' },
+    { id: 'sop-w4', t: '回填《选题库》', n: '保底 ≥ 30 条可发选题' },
+    { id: 'sop-w5', t: '镇海时间线打卡', n: '本月节点（8 月 = 宁波生活 + 搬镇海心路）有无新素材' }
+  ]
+};
 const LEDGER_BOOKS = { home: '家庭日常', trade: '外贸收支', invest: '理财台账' };
 const CATS = {
   home: ['餐饮买菜', '教育培训', '日用百货', '交通出行', '医疗健康', '人情往来', '娱乐旅行', '房贷房租', '其他'],
@@ -644,6 +689,7 @@ function seed() {
       { id: uid(), name: '沪深300指数定投', type: '基金定投', cost: 36000, value: 39240, note: '每月 3000' },
       { id: uid(), name: '教育金存款', type: '存款', cost: 60000, value: 61500, note: '安安 + 宁宁' }
     ],
+    xsopCk: [],
     sync: { url: '', key: '', auto: false, last: 0 }
   };
 }
@@ -1082,6 +1128,13 @@ function toggleSched(id) {
   if (i >= 0) DB.schedCk.splice(i, 1); else DB.schedCk.push(k);
   save(); render();
 }
+function toggleXsop(id) {
+  DB.xsopCk = DB.xsopCk || [];
+  const k = TODAY() + '|' + id;
+  const i = DB.xsopCk.indexOf(k);
+  if (i >= 0) DB.xsopCk.splice(i, 1); else { DB.xsopCk.push(k); confetti(); }
+  save(); render();
+}
 
 /* ---------- 视图：安安 ---------- */
 function viewAnan() {
@@ -1158,6 +1211,35 @@ function viewTrade() {
 
 /* ---------- 视图：小红书（专业运营模块） ---------- */
 let xhsDirFilter = '';
+function xsopBlock() {
+  const ck = DB.xsopCk || [];
+  const done = id => ck.includes(TODAY() + '|' + id);
+  const isWE = [0, 6].includes(new Date().getDay());
+  const row = it => `<div class="sop-row ${done(it.id) ? 'done' : ''}" data-act="xsop" data-id="${it.id}">
+    <span class="sop-ck">${done(it.id) ? '✅' : '⬜'}</span>
+    <div class="sop-body"><b>${esc(it.t)}</b>${it.n ? `<span>${esc(it.n)}</span>` : ''}</div>
+  </div>`;
+  const dN = XSOP.daily.filter(it => done(it.id)).length;
+  const pN = XSOP.post.filter(it => done(it.id)).length;
+  return `<div class="card sop-card">
+    <div class="card-h"><h3>📋 开号初期 · 每日 SOP 打卡</h3>
+      <span class="sub">今日必做 ${dN}/${XSOP.daily.length} · 发帖日 ${pN}/${XSOP.post.length}</span></div>
+    <div class="sop-sec"><div class="sop-sec-h">每日必做 <small>5–10 分钟 · 养鱼</small></div>${XSOP.daily.map(row).join('')}</div>
+    <div class="sop-sec"><div class="sop-sec-h">📮 发帖日任务 <small>当天做</small></div>${XSOP.post.map(row).join('')}</div>
+    ${isWE ? `<div class="sop-sec"><div class="sop-sec-h">🗓 周末补做 <small>今天周末</small></div>${XSOP.weekend.map(row).join('')}</div>`
+            : `<div class="sop-note">🗓 周末补做仅在周六 / 周日显示（今日非周末）</div>`}
+  </div>`;
+}
+function xsopRivals() {
+  return `<div class="card sop-rival">
+    <div class="card-h"><h3>🎯 对标追踪 · 模仿红线</h3></div>
+    <div class="rival"><b>🥇 周小妍妍子</b><span class="rival-tag">学结构</span>
+      <p>每日刷 2 分钟记 1 条结构 / 封面公式；每周精拆 1 篇「12 小时系列」。学系列化思维、封面「数字+身份+时间段」、二胎同框。</p></div>
+    <div class="rival"><b>🥈 黑米</b><span class="rival-tag">学框架</span>
+      <p>每周精拆 1 篇「二年级打怪升级」；每月看合集分类。学「打怪升级」叙事、低频精品、合集运营。</p></div>
+    <div class="sop-redline">📐 <b>模仿红线</b>：学结构 / 标题 / 框架 / 互动 / 视觉方向；不抄文案、不盗图、不搬视频、不塑造「学霸人设」、不过度暴露隐私。<br>公式：新爆文 = 70% 爆文结构 × 30% 你的差异化（镇海妈妈 + 真实场景）。</div>
+  </div>`;
+}
 function viewXhs() {
   const prof = DB.xprofile || {};
   const tot = k => DB.xposts.reduce((s, p) => s + Number(p[k] || 0), 0);
@@ -1217,6 +1299,9 @@ function viewXhs() {
     ${prof.audience ? `<div class="t-meta"><span class="pill p-sub">🎯 ${esc(prof.audience)}</span></div>` : ''}
     <div class="xprof-foot">笔记 ${Number(prof.notes || 0)} 篇 · 粉丝 ${Number(prof.fans || 0).toLocaleString()}</div>
   </div>
+
+  ${xsopBlock()}
+  ${xsopRivals()}
 
   <h2 class="section-title">📋 选题库 <small>内容生产中枢 · 点卡片编辑</small></h2>
   <div class="chips" style="margin-bottom:10px">
@@ -1903,6 +1988,7 @@ document.addEventListener('click', e => {
     case 'del-post': if (confirm('删除该条数据？')) { DB.xposts = DB.xposts.filter(x => x.id !== id); save(); render(); } break;
     case 'xhs-dir': xhsDirFilter = id; render(); break;
     case 'edit-profile': profileForm(); break;
+    case 'xsop': toggleXsop(id); break;
     case 'add-book': bookForm(); break;
     case 'edit-book': bookForm(DB.books.find(x => x.id === id)); break;
     case 'del-book': if (confirm('删除这本书？')) { DB.books = DB.books.filter(x => x.id !== id); save(); render(); } break;
