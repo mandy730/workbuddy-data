@@ -35,18 +35,28 @@ const MIME = {
 };
 
 let dbRaw = '{}';
-try { dbRaw = fs.readFileSync(DATA_FILE, 'utf8') || '{}'; JSON.parse(dbRaw); }
+let dbRev = 0;
+try { dbRaw = fs.readFileSync(DATA_FILE, 'utf8') || '{}'; const d = JSON.parse(dbRaw); if (d && d.meta && d.meta.rev) dbRev = d.meta.rev; }
 catch (e) { dbRaw = '{}'; }
 
 const sseClients = new Set();
 
 function readDB() { return dbRaw; }
+// 每次写入都由服务器统一盖时间戳 + 递增版本号，作为"谁更新"的唯一权威依据
 function writeDB(json) {
-  dbRaw = json;
-  try { fs.writeFileSync(DATA_FILE, json); } catch (e) { console.warn('写盘失败', e.message); }
+  let obj;
+  try { obj = JSON.parse(json); } catch (e) { obj = {}; }
+  if (!obj || typeof obj !== 'object') obj = {};
+  if (!obj.meta || typeof obj.meta !== 'object') obj.meta = {};
+  obj.meta.savedAt = Date.now();
+  obj.meta.rev = ++dbRev;
+  const out = JSON.stringify(obj);
+  dbRaw = out;
+  try { fs.writeFileSync(DATA_FILE, out); } catch (e) { console.warn('写盘失败', e.message); }
   // 广播给所有正在监听的浏览器（实时同步核心）
   const msg = 'data: ' + Date.now() + '\n\n';
   sseClients.forEach(res => { try { res.write(msg); } catch (e) {} });
+  return obj.meta;
 }
 
 function send(res, code, body, type) {
@@ -99,8 +109,8 @@ const server = http.createServer((req, res) => {
       req.on('data', c => (body += c));
       req.on('end', () => {
         try { JSON.parse(body); } catch (e) { send(res, 400, '{"ok":false,"error":"bad json"}'); return; }
-        writeDB(body);
-        send(res, 200, '{"ok":true}');
+        const meta = writeDB(body);
+        send(res, 200, JSON.stringify({ ok: true, savedAt: meta.savedAt, rev: meta.rev }));
       });
       return;
     }

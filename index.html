@@ -806,7 +806,8 @@ function save(push = true) {
 DB = load();
 
 /* ---------- 同步默认开启：同一网址的所有设备自动互通 ---------- */
-DB.sync = DB.sync || { url: '', key: '', auto: true, last: 0 };
+DB.sync = DB.sync || { url: '', key: '', auto: true, last: 0, haveRev: null, haveSavedAt: 0 };
+if (DB.sync.haveRev == null) DB.sync.haveRev = null;
 if (!DB.sync.url && /^https?:$/.test(location.protocol)) DB.sync.url = location.origin;
 if (DB.sync.auto !== false) DB.sync.auto = true;
 
@@ -1858,6 +1859,44 @@ function importJSON() {
 }
 let syncTimer = null;
 let esConn = null;
+
+/* ---- 同步合并：以服务器版本为准，按 id 合并数组，避免整份覆盖丢数据 ---- */
+function itemsHaveId(a){ return Array.isArray(a) && a.some(x => x && typeof x === 'object' && x.id != null); }
+function arrIsStrings(a){ return Array.isArray(a) && a.length > 0 && typeof a[0] === 'string'; }
+function mergeDB(local, remote) {
+  const base = JSON.parse(JSON.stringify(remote));
+  const keys = new Set([...Object.keys(base), ...Object.keys(local)]);
+  keys.forEach(k => {
+    const rv = base[k], lv = local[k];
+    if (Array.isArray(rv) && Array.isArray(lv)) {
+      if (itemsHaveId(rv) || itemsHaveId(lv)) {
+        const map = {};
+        rv.forEach(it => { if (it && it.id != null) map[it.id] = it; });
+        lv.forEach(it => {
+          if (!it || it.id == null) return;
+          const r = map[it.id];
+          if (!r) map[it.id] = it;
+          else { const lt = it.updatedAt || 0, rt = r.updatedAt || 0; if (lt > rt) map[it.id] = it; }
+        });
+        base[k] = Object.values(map);
+      } else if (arrIsStrings(rv) || arrIsStrings(lv)) {
+        base[k] = Array.from(new Set([...(rv || []), ...(lv || [])]));
+      }
+    }
+  });
+  return base;
+}
+function stampItems(db) {
+  Object.keys(db).forEach(k => {
+    const v = db[k];
+    if (Array.isArray(v) && v.length && v[0] && typeof v[0] === 'object' && v[0].id != null) {
+      const t = (db.meta && db.meta.updatedAt) || Date.now();
+      v.forEach(it => { if (it && it.id != null && !it.updatedAt) it.updatedAt = t; });
+    }
+  });
+  return db;
+}
+
 function isJsonbin() { return !!(DB.sync && DB.sync.url && DB.sync.url.includes('jsonbin')); }
 function syncBaseUrl() {
   const u = (DB.sync.url || '').replace(/\/+$/, '');
@@ -1879,9 +1918,13 @@ function queueSync() {
 async function syncPush(loud) {
   if (!DB.sync || !DB.sync.url) { if (loud) toast('请先填写同步地址'); return; }
   try {
-    const r = await fetch(syncBaseUrl() + syncQuery(), { method: 'PUT', headers: syncHeaders(), body: JSON.stringify(DB) });
+    const payload = stampItems(DB);
+    const r = await fetch(syncBaseUrl() + syncQuery(), { method: 'PUT', headers: syncHeaders(), body: JSON.stringify(payload) });
     if (!r.ok) throw new Error('status ' + r.status);
-    DB.sync.last = Date.now(); localStorage.setItem(KEY, JSON.stringify(DB)); paintSync();
+    let resp = {}; try { resp = await r.json(); } catch (e) {}
+    DB.sync.last = Date.now();
+    if (resp.rev != null) { DB.sync.haveRev = resp.rev; DB.sync.haveSavedAt = resp.savedAt || 0; }
+    localStorage.setItem(KEY, JSON.stringify(DB)); paintSync();
     if (loud) { toast('已上传到云端 ☁️'); openSettings(); }
   } catch (e) { if (loud) toast('上传失败，请检查地址'); }
 }
@@ -1895,17 +1938,27 @@ async function syncPull(loud) {
     const j = await r.json();
     const remote = j && j.record ? j.record : j;
     if (remote && remote.meta) {
-      // loud=手动点击时强制覆盖本机；自动同步时按时间戳判断
-      if (loud || (remote.meta.updatedAt || 0) >= (DB.meta.updatedAt || 0)) {
+      const sRev = (remote.meta.rev != null) ? remote.meta.rev : null;
+      const sAt = remote.meta.savedAt || 0;
+      const haveRev = DB.sync.haveRev;
+      // 服务器版本比本机"上次同步版本"新 -> 拉取；首次同步或手动点击也拉取
+      const serverNewer = (sRev != null && haveRev != null) ? (sRev > haveRev) : (sAt > (DB.sync.haveSavedAt || 0));
+      if (loud || haveRev == null || serverNewer) {
         const keepSync = DB.sync;
-        DB = Object.assign(seed(), remote); DB.sync = keepSync; DB.sync.last = Date.now();
+        let merged = mergeDB(DB, remote);          // 按 id 合并数组，保留本地独有 & 较新条目
+        merged = Object.assign(seed(), merged);
+        merged.sync = keepSync;
+        merged.sync.last = Date.now();
+        merged.sync.haveRev = (sRev != null) ? sRev : (haveRev == null ? 0 : haveRev);
+        merged.sync.haveSavedAt = sAt || DB.sync.haveSavedAt || 0;
         // 云端可能是旧结构，拉下来后补跑迁移并回推，保证所有设备一致
-        const migrated = migrate(DB);
-        if (migrated) DB.meta.updatedAt = Date.now();
+        const migrated = migrate(merged);
+        if (migrated) merged.meta.updatedAt = Date.now();
+        DB = merged;
         localStorage.setItem(KEY, JSON.stringify(DB));
         if (migrated) syncPush(false);
         render(); paintSync(); if (loud) { toast('已拉取云端数据 ☁️'); openSettings(); }
-      } else if (loud) toast('本地数据更新，无需拉取');
+      } else if (loud) toast('本地数据已是最新');
     } else if (loud) toast('云端还没有数据，先上传一次吧');
   } catch (e) { if (loud) toast('拉取失败，请检查地址'); }
 }
@@ -2015,8 +2068,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 
 /* ---------- 启动 ---------- */
 render();
-// 迁移产生的新数据立刻落盘并推云端，让手机/电脑统一
-save();
+// 迁移产生的新数据先落盘（不推送）；随后拉云端，避免启动即把本地旧数据盖到云端
+save(false);
 if (DB.sync && DB.sync.auto && DB.sync.url) { syncPull(false); connectStream(); }
 // 页面重新可见（手机切回 App）时立即拉一次，避免看到过期内容
 document.addEventListener('visibilitychange', () => {
